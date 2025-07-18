@@ -1,0 +1,74 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'org.springframework.boot' version "${springBootVersion}"
+    id "io.freefair.lombok" version "${ioFreeFairLombok}"
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'fi.poltsi.vempain.auth'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+	archiveFileName = "vempain-auth-core-${version}.jar"
+}
+
+dependencies {
+    implementation project(':api')
+    // Spring Boot
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: "${springBootVersion}"
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: "${springBootVersion}"
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: "${springBootVersion}"
+    testImplementation group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: "${springBootVersion}"
+    // https://mvnrepository.com/artifact/org.springframework.security/spring-security-test
+    testImplementation group: 'org.springframework.security', name: 'spring-security-test', version: '6.5.1'
+    // Other
+    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api
+    implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: "${jjwtVersion}"
+	// https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
+	implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: '3.0.0'
+	// https://mvnrepository.com/artifact/io.swagger.core.v3/swagger-annotations
+	implementation group: 'io.swagger.core.v3', name: 'swagger-annotations', version: "${swaggerVersion}"
+    compileOnly 'org.projectlombok:lombok'
+    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-impl
+    runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: "${jjwtVersion}"
+    // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson
+    runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: "${jjwtVersion}"
+    runtimeOnly 'org.postgresql:postgresql'
+    annotationProcessor 'org.projectlombok:lombok'
+	// https://mvnrepository.com/artifact/org.junit/junit-bom
+	testImplementation platform("org.junit:junit-bom:$junitVersion")
+	// https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: "$junitVersion"
+	// https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter
+	testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '5.18.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+			artifactId = 'vempain-auth-core'
+        }
+    }
+}
