@@ -1,5 +1,6 @@
 package fi.poltsi.vempain.auth.tools;
 
+import fi.poltsi.vempain.auth.exception.VempainAuthenticationException;
 import fi.poltsi.vempain.auth.service.UserDetailsImpl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -24,7 +25,7 @@ public class AuthTools {
 
 		if (authentication == null ||
 			authentication.getPrincipal() instanceof String) {
-			return -1;
+			throw new VempainAuthenticationException();
 		}
 
 		return ((UserDetailsImpl) authentication.getPrincipal()).getId();
