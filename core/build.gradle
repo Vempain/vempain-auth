@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'org.springframework.boot' version "${springBootVersion}"
+	// https://mvnrepository.com/artifact/io.freefair.lombok/io.freefair.lombok.gradle.plugin
     id "io.freefair.lombok" version "${ioFreeFairLombok}"
     id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -50,14 +51,23 @@ dependencies {
     runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: "${jjwtVersion}"
     // https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-jackson
     runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: "${jjwtVersion}"
-    runtimeOnly 'org.postgresql:postgresql'
-    annotationProcessor 'org.projectlombok:lombok'
+	// https://mvnrepository.com/artifact/org.postgresql/postgresql
+	implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.7'
+	annotationProcessor 'org.projectlombok:lombok'
 	// https://mvnrepository.com/artifact/org.junit/junit-bom
-	testImplementation platform("org.junit:junit-bom:$junitVersion")
+	testImplementation platform("org.junit:junit-bom:${junitVersion}")
 	// https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: "$junitVersion"
+	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: "${junitVersion}"
 	// https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter
 	testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '5.18.0'
+	// https://mvnrepository.com/artifact/org.testcontainers/junit-jupiter
+	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: "${testContainersVersion}"
+	// https://mvnrepository.com/artifact/org.testcontainers/postgresql
+	testImplementation group: 'org.testcontainers', name: 'postgresql', version: "${testContainersVersion}"
+	// https://mvnrepository.com/artifact/org.flywaydb/flyway-core
+	testImplementation group: 'org.flywaydb', name: 'flyway-core', version: "${flywayVersion}"
+	// https://mvnrepository.com/artifact/org.flywaydb/flyway-database-postgresql
+	runtimeOnly group: 'org.flywaydb', name: 'flyway-database-postgresql', version: "${flywayVersion}"
 }
 
 test {
