@@ -21,8 +21,8 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - name: Build with Maven
-        run: ./mvnw clean verify
+      - name: Build with Gradle
+        run: ./gradlew clean test
 
   publish:
     name: Package and publish to GitHub Maven
@@ -80,7 +80,7 @@ jobs:
           </settings>
           EOF
       - name: Publish package
-        run: ./mvnw deploy -DskipTests -DreleaseVersion=${targetVersion}
+        run: ./gradlew publish -PreleaseVersion=${targetVersion} --no-daemon
         env:
           GITHUB_TOKEN: ${{ secrets.VEMPAIN_ACTION_TOKEN }}
           targetVersion: ${{ steps.newVer.outputs.newVersion }}
