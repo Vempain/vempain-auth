@@ -1,4 +1,4 @@
-name: Build, test and upload Docker image
+name: Build, test and upload artifact to GitHub Packages
 on:
   pull_request:
     branches:
