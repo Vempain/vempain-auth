@@ -79,6 +79,7 @@ jobs:
             </servers>
           </settings>
           EOF
+
       - name: Publish package
         run: ./gradlew publish -PreleaseVersion=${targetVersion} --no-daemon
         env:
