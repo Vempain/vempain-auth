@@ -23,6 +23,8 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Schema(description = "Abstract response with base fields of metadata and ACL")
 public class AbstractResponse {
+	@Schema(description = "ID of the entity", example = "123")
+	private long id;
 	@Schema(description = "List of ACL responses", example = "[{acl_id: 1, user: 1, unit: null, true, true, false, false}]")
 	private List<AclResponse> acls;
 	@Schema(description = "Whether the object should be locked from editing", example = "false")

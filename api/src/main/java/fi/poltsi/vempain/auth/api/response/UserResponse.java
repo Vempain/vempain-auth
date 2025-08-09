@@ -20,8 +20,6 @@ import java.time.Instant;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Schema(description = "Item depicting a user item")
 public class UserResponse extends AbstractResponse {
-	@Schema(description = "User ID", example = "1")
-	private Long          id;
 	@Schema(description = "Private user", example = "true")
 	private boolean       privateUser;
 	@Schema(description = "Full name", example = "Arnold Dunkelswetter")
