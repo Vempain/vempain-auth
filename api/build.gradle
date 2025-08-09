@@ -40,4 +40,14 @@ publishing {
 			artifactId = 'vempain-auth-api'
         }
     }
+	repositories {
+		maven {
+			name = "GitHubPackages"
+			url = uri("https://maven.pkg.github.com/Vempain/vempain-auth")
+			credentials {
+				username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: ""
+				password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.token") ?: ""
+			}
+		}
+	}
 }
