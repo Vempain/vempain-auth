@@ -2,7 +2,6 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'org.springframework.boot' version "${springBootVersion}"
-	// https://mvnrepository.com/artifact/io.freefair.lombok/io.freefair.lombok.gradle.plugin
     id "io.freefair.lombok" version "${ioFreeFairLombok}"
     id 'io.spring.dependency-management' version '1.1.7'
 }
