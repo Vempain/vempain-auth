@@ -24,14 +24,13 @@ jar {
 dependencies {
 	api group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: "${jacksonVersion}"
 	api group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: "${jacksonVersion}"
+	implementation group: 'io.swagger.core.v3', name: 'swagger-annotations', version: "${swaggerVersion}"
 	// https://mvnrepository.com/artifact/org.springframework/spring-context
 	implementation group: 'org.springframework', name: 'spring-context', version: '6.2.10'
 	// https://mvnrepository.com/artifact/org.springframework/spring-web
 	implementation group: 'org.springframework', name: 'spring-web', version: '6.2.10'
 	// https://mvnrepository.com/artifact/jakarta.persistence/jakarta.persistence-api
 	implementation group: 'jakarta.persistence', name: 'jakarta.persistence-api', version: '3.2.0'
-	// https://mvnrepository.com/artifact/io.swagger.core.v3/swagger-annotations
-	implementation group: 'io.swagger.core.v3', name: 'swagger-annotations', version: "${swaggerVersion}"
 	// https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
 	implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: '3.1.1'
 }
