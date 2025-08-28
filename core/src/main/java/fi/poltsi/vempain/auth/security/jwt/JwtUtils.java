@@ -23,10 +23,10 @@ import java.util.UUID;
 @Component
 public class JwtUtils {
 
-	@Value("${vempain.app.jwtExpirationMs}")
+	@Value("${vempain.app.jwt-expiration-ms}")
 	private       long      jwtExpirationMs;
 	// TODO This needs to be cleaned up as the secret is not used at all for the moment
-	@Value("${vempain.app.jwtSecret}")
+	@Value("${vempain.app.jwt-secret}")
 	private       String    jwtSecret;
 	private final SecretKey secretKey = Jwts.SIG.HS512.key().build();
 
