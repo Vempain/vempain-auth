@@ -109,22 +109,42 @@ jobs:
           github-token: ${{ secrets.VEMPAIN_ACTION_TOKEN }}
           script: |
             const tag = '${{ steps.newVer.outputs.newVersion }}';
-            const resp = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: tag,
-              name: `Release ${tag}`,
-              body: [
-                `Automated release for ${tag}`,
-                '',
-                'Artifact tags pushed:',
-                '- latest',
-                `- ${{ steps.basemain.outputs.mainVersion }}`,
-                `- ${{ steps.basemain.outputs.baseVersion }}`,
-                `- ${tag}`
-              ].join('\n'),
-              draft: false,
-              prerelease: false,
-              generate_release_notes: true
-            });
-            core.info(`Release created: ${resp.data.html_url}`);
+
+            // Check if release already exists
+            let releaseExists = false;
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              releaseExists = true;
+              core.info(`Release for ${tag} already exists, skipping creation`);
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
+
+            // Create release only if it doesn't exist
+            if (!releaseExists) {
+              const resp = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tag,
+                name: `Release ${tag}`,
+                body: [
+                  `Automated release for ${tag}`,
+                  '',
+                  'Artifact tags pushed:',
+                  '- latest',
+                  `- ${{ steps.basemain.outputs.mainVersion }}`,
+                  `- ${{ steps.basemain.outputs.baseVersion }}`,
+                  `- ${tag}`
+                ].join('\n'),
+                draft: false,
+                prerelease: false,
+                generate_release_notes: true
+              });
+              core.info(`Release created: ${resp.data.html_url}`);
+            }
