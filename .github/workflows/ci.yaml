@@ -116,7 +116,7 @@ jobs:
               name: `Release ${tag}`,
               body: `Automated release for ${tag}
 
-              Docker tags pushed:
+              Artifact tags pushed:
               - latest
               - ${{ steps.basemain.outputs.mainVersion }}
               - ${{ steps.basemain.outputs.baseVersion }}
