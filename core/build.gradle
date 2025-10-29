@@ -1,28 +1,27 @@
 plugins {
-    id 'java-library'
-    id 'maven-publish'
-    id 'org.springframework.boot' version "${springBootVersion}"
-    id "io.freefair.lombok" version "${ioFreeFairLombok}"
-    id 'io.spring.dependency-management' version '1.1.7'
+	id 'java-library'
+	id 'maven-publish'
+	id "io.freefair.lombok" version "${ioFreeFairLombok}"
+	id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'fi.poltsi.vempain'
 version = project.hasProperty("releaseVersion") ? project.releaseVersion : '0.0.1-SNAPSHOT'
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(javaVersion.toInteger())
+	}
 }
 
 configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
 }
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 }
 
 jar {
@@ -31,43 +30,45 @@ jar {
 
 dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
-    implementation project(':api')
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: "${springBootVersion}"
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: "${springBootVersion}"
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: "${springBootVersion}"
-	implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: "${jjwtVersion}"
-	implementation group: 'io.swagger.core.v3', name: 'swagger-annotations', version: "${swaggerVersion}"
+	implementation project(':api')
+	implementation "org.springframework.boot:spring-boot-starter-security:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-web:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}"
+	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+	implementation "io.swagger.core.v3:swagger-annotations:${swaggerVersion}"
 	// https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
-	implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: '3.0.0'
+	implementation "jakarta.annotation:jakarta.annotation-api:3.0.0"
 	// https://mvnrepository.com/artifact/org.postgresql/postgresql
-	implementation group: 'org.postgresql', name: 'postgresql', version: '42.7.8'
-    testImplementation group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: "${springBootVersion}"
+	implementation "org.postgresql:postgresql:42.7.8"
+	testImplementation "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
 	testImplementation platform("org.junit:junit-bom:${junitVersion}")
-	testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: "${junitVersion}"
-	testImplementation group: 'org.testcontainers', name: 'junit-jupiter', version: "${testContainersVersion}"
-	testImplementation group: 'org.testcontainers', name: 'postgresql', version: "${testContainersVersion}"
-	testImplementation group: 'org.flywaydb', name: 'flyway-core', version: "${flywayVersion}"
-    // https://mvnrepository.com/artifact/org.springframework.security/spring-security-test
-    testImplementation group: 'org.springframework.security', name: 'spring-security-test', version: '6.5.5'
+	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+	testImplementation "org.testcontainers:junit-jupiter:${testContainersVersion}"
+	testImplementation "org.testcontainers:postgresql:${testContainersVersion}"
+	testImplementation "org.flywaydb:flyway-core:${flywayVersion}"
+	// https://mvnrepository.com/artifact/org.springframework.security/spring-security-test
+	testImplementation "org.springframework.security:spring-security-test:6.5.5"
 	// https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter
-	testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '5.20.0'
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: "${jjwtVersion}"
-    runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: "${jjwtVersion}"
-	runtimeOnly group: 'org.flywaydb', name: 'flyway-database-postgresql', version: "${flywayVersion}"
+	testImplementation "org.mockito:mockito-junit-jupiter:5.20.0"
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+	runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+	runtimeOnly "org.flywaydb:flyway-database-postgresql:${flywayVersion}"
+	// Ensure the JUnit Platform launcher is on the runtime classpath (required by Gradle 8/9)
+	testImplementation "org.junit.platform:junit-platform-launcher:${junitVersion}"
 }
 
 test {
-    useJUnitPlatform()
+	useJUnitPlatform()
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
 			artifactId = 'vempain-auth-core'
-        }
-    }
+		}
+	}
 	repositories {
 		maven {
 			name = "GitHubPackages"
