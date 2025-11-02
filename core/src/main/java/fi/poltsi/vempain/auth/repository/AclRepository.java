@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.ListPagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,11 @@ public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>
 	@Modifying
 	@Query(value = "UPDATE Acl SET userId = :userId, unitId = :unitId, readPrivilege = :readPriv, modifyPrivilege = :modifyPriv, createPrivilege = :createPriv, deletePrivilege = :deletePriv " +
 				   "WHERE id = :id")
-	void update(Long id, Long userId, Long unitId, boolean readPriv, boolean modifyPriv, boolean createPriv, boolean deletePriv);
+	void update(@Param(value = "id") Long id, @Param(value = "userId") Long userId, @Param(value = "unitId") Long unitId,
+				@Param(value = "readPriv") boolean readPriv,
+				@Param(value = "modifyPriv") boolean modifyPriv,
+				@Param(value = "createPriv") boolean createPriv,
+				@Param(value = "deletePriv") boolean deletePriv);
 
 	@Modifying
 	void deleteAclsByAclId(long aclId);

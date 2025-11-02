@@ -40,6 +40,8 @@ dependencies {
 	implementation "jakarta.annotation:jakarta.annotation-api:3.0.0"
 	// https://mvnrepository.com/artifact/org.postgresql/postgresql
 	implementation "org.postgresql:postgresql:42.7.8"
+	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+	implementation "org.apache.commons:commons-lang3:3.18.0"
 	testImplementation "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
 	testImplementation platform("org.junit:junit-bom:${junitVersion}")
 	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"

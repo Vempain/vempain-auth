@@ -30,7 +30,7 @@ public class AclService {
 	private final UserRepository userRepository;
 	private final UnitRepository unitRepository;
 
-	public Iterable<Acl> findAll() {
+	public List<Acl> findAll() {
         return aclRepository.findAll();
     }
 
@@ -42,7 +42,7 @@ public class AclService {
 		var acls = aclRepository.findAll();
 
 		for (Acl acl : acls) {
-			log.info("Current list of acls in database: permission ID {} ACL ID {} User ID {} Unit ID {}",
+			log.debug("Current list of acls in database: permission ID {} ACL ID {} User ID {} Unit ID {}",
 					 acl.getId(), acl.getAclId(), acl.getUserId(), acl.getUnitId());
 		}
 
