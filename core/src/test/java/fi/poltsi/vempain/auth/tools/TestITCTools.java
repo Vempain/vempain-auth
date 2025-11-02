@@ -26,6 +26,7 @@ import java.util.List;
 import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static fi.poltsi.vempain.auth.tools.TestUserAccountTools.encryptPassword;
 import static fi.poltsi.vempain.auth.tools.TestUserAccountTools.randomPassword;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @Slf4j
@@ -84,6 +85,7 @@ public class TestITCTools {
 		}
 
 		var acls = aclService.findAll();
+		assertFalse(acls.isEmpty());
 		return aclIdList;
 	}
 
