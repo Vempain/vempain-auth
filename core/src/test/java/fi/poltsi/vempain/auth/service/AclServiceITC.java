@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @SpringBootTest(classes = AclServiceITC.TestApp.class)
 class AclServiceITC extends IntegrationTestSetup {
 	static final long initCount = 5;
-
+	static final long ACL_MULTIPILIER = 7L;
 	@Autowired
 	private AclService     aclService;
 	@Autowired
@@ -44,7 +44,7 @@ class AclServiceITC extends IntegrationTestSetup {
 		testITCTools.generateAcls(initCount);
 		var acls = aclService.findAll();
 		assertTrue(StreamSupport.stream(acls.spliterator(), false)
-								.count() >= 7 * initCount);
+								.count() >= ACL_MULTIPILIER * initCount);
 	}
 
 	@Test
