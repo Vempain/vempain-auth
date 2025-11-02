@@ -35,6 +35,14 @@ public class LoginControllerITC {
 			.withDatabaseName("testdb")
 			.withUsername("testuser")
 			.withPassword("testpass");
+	@Autowired
+	private MockMvc mockMvc;
+	@Autowired
+	private UserRepository userRepository;
+	@Autowired
+	private AclRepository aclRepository;
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	@DynamicPropertySource
 	static void overrideProps(DynamicPropertyRegistry registry) {
@@ -43,18 +51,6 @@ public class LoginControllerITC {
 		registry.add("spring.datasource.password", postgres::getPassword);
 		registry.add("spring.flyway.enabled", () -> "true");
 	}
-
-	@Autowired
-	private MockMvc mockMvc;
-
-	@Autowired
-	private UserRepository userRepository;
-
-	@Autowired
-	private AclRepository aclRepository;
-
-	@Autowired
-	private ObjectMapper objectMapper;
 
 	@BeforeEach
 	void setUp() {

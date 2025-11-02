@@ -1,0 +1,15 @@
+server:
+  port: 0
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+vempain:
+  cors:
+    allowed-origins: [ "http://localhost" ]
+    max-age: 3600
+    cors-pattern: "/**"
+
