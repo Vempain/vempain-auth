@@ -129,7 +129,7 @@ public class TestITCTools {
 
 		// Once we have generated a user, we can generate the ACL for the object
 		var userAclID = generateAcl(newUser.getId(), null, true, true, true, true);
-		// Then update the aciId on the user
+		// Then update the aclId on the user
 		newUser.setAclId(userAclID);
 		// We can also update the creator and modifier to be correct
 		newUser.setCreator(newUser.getId());
@@ -181,7 +181,7 @@ public class TestITCTools {
 					   .created(Instant.now())
 					   .creator(userId)
 					   .modified(null)
-					   .modified(null)
+					   .modifier(null)
 					   .build();
 		var newUnit = unitService.save(unit);
 		return newUnit.getId();

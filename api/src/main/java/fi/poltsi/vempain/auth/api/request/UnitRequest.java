@@ -21,7 +21,7 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Schema(description = "Unit request")
 public class UnitRequest {
-	@Schema(description = "Únit ID", example = "1")
+	@Schema(description = "Unit ID", example = "1")
 	private long             id;
 	@Schema(description = "Unit name", example = "users")
 	private String           name;
