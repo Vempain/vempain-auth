@@ -163,7 +163,7 @@ class AclServiceITC extends IntegrationTestSetup {
 		Iterable<Acl> acls = aclService.findAclByAclId(initCount - 1);
 
 		for (Acl acl : acls) {
-			// The aclId is set to zero
+			// The aclId is set to -1
 			try {
 				acl.setAclId(-1L);
 				aclService.update(acl);
