@@ -179,7 +179,7 @@ public class TestITCTools {
 					   .created(Instant.now())
 					   .creator(userId)
 					   .modified(null)
-					   .modified(null)
+					   .modifier(null)
 					   .build();
 		var newUnit = unitService.save(unit);
 		return newUnit.getId();
