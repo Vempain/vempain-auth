@@ -1,10 +1,10 @@
-package fi.poltsi.vempain.auth.it;
+package fi.poltsi.vempain.auth.service;
 
+import fi.poltsi.vempain.auth.IntegrationTestSetup;
 import fi.poltsi.vempain.auth.api.AccountStatus;
 import fi.poltsi.vempain.auth.api.PrivacyType;
 import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.repository.UserRepository;
-import fi.poltsi.vempain.auth.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -19,7 +19,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = UserServiceIntegrationITC.TestApp.class)
-class UserServiceIntegrationITC extends BasePostgresContainerSetup {
+class UserServiceIntegrationITC extends IntegrationTestSetup {
 
 	@Autowired
 	private UserService    userService;

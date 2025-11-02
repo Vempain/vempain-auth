@@ -2,7 +2,14 @@ server:
   port: 0
 
 spring:
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration
+      - classpath:db
   jpa:
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -12,4 +19,3 @@ vempain:
     allowed-origins: [ "http://localhost" ]
     max-age: 3600
     cors-pattern: "/**"
-

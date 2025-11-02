@@ -1,6 +1,7 @@
-package fi.poltsi.vempain.auth.it;
+package fi.poltsi.vempain.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fi.poltsi.vempain.auth.IntegrationTestSetup;
 import fi.poltsi.vempain.auth.api.AccountStatus;
 import fi.poltsi.vempain.auth.api.PrivacyType;
 import fi.poltsi.vempain.auth.api.request.LoginRequest;
@@ -28,15 +29,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.Set;
 
+import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(classes = LoginIntegrationITC.TestApp.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = LoginRTC.TestApp.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-class LoginIntegrationITC extends BasePostgresContainerSetup {
+class LoginRTC extends IntegrationTestSetup {
 
 	@Autowired
 	private MockMvc         mockMvc;
@@ -53,18 +55,17 @@ class LoginIntegrationITC extends BasePostgresContainerSetup {
 
 	@BeforeEach
 	void setup() {
-		userRepository.deleteAll();
-		unitRepository.deleteAll();
-
+		var unitAclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
 		Unit unit = Unit.builder()
 						.name("USER")
 						// add required audit fields
-						.creator(1L)
+						.creator(ADMIN_ID)
 						.created(Instant.now())
 						// if Unit extends AbstractVempainEntity, aclId must be positive
-						.aclId(1L)
+						.aclId(unitAclId)
 						.build();
 		unit = unitRepository.save(unit);
+		var userAclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
 
 		var user = UserAccount.builder()
 							  .loginName("testuser")
@@ -77,9 +78,9 @@ class LoginIntegrationITC extends BasePostgresContainerSetup {
 							  .privacyType(PrivacyType.PUBLIC)
 							  .status(AccountStatus.ACTIVE)
 							  .locked(false)
-							  .aclId(1L)
+							  .aclId(userAclId)
 							  .units(Set.of(unit))
-							  .creator(1L)
+							  .creator(ADMIN_ID)
 							  .created(Instant.now())
 							  .build();
 		userRepository.save(user);
@@ -89,10 +90,11 @@ class LoginIntegrationITC extends BasePostgresContainerSetup {
 	}
 
 	@Test
-	void login_succeeds_and_returns_token() throws Exception {
-		var req = new LoginRequest();
-		req.setLogin("testuser");
-		req.setPassword("S3cure-Pass!");
+	void loginOk() throws Exception {
+		var req = LoginRequest.builder()
+							  .login("testuser")
+							  .password("S3cure-Pass!")
+							  .build();
 
 		mockMvc.perform(
 					   post("/login")
