@@ -1,14 +1,20 @@
 package fi.poltsi.vempain.auth.tools;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.poltsi.vempain.auth.api.request.AclRequest;
 import fi.poltsi.vempain.auth.api.response.AclResponse;
 import fi.poltsi.vempain.auth.entity.Acl;
+import fi.poltsi.vempain.auth.entity.Unit;
 import fi.poltsi.vempain.auth.entity.UserAccount;
+import fi.poltsi.vempain.auth.entity.UserUnit;
 import fi.poltsi.vempain.auth.entity.UserUnitId;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 @Slf4j
 public class TestUTCTools {
@@ -109,5 +115,43 @@ public class TestUTCTools {
 						 .userId(userId)
 						 .unitId(unitId)
 						 .build();
+	}
+
+	// UserUnit
+	public static UserUnit generateUserUnit(long userId, long unitId) {
+		return UserUnit.builder()
+					   .id(generateUserUnitId(userId, unitId))
+					   .user(generateUser(userId))
+					   .unit(generateUnit(unitId))
+					   .build();
+	}
+
+	// Unit
+	public static Unit generateUnit(long unitId) {
+		return Unit.builder()
+				   .id(unitId)
+				   .name("Test unit " + unitId)
+				   .build();
+	}
+
+	public static List<Unit> generateUnitList(long count) {
+		ArrayList<Unit> units = new ArrayList<>();
+		for (long i = 1; i <= count; i++) {
+			units.add(generateUnit(i));
+		}
+
+		return units;
+	}
+
+	// Generic
+	public static <T> T deepCopy(T original, Class<T> classType) {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.findAndRegisterModules();
+		try {
+			return objectMapper.readValue(objectMapper.writeValueAsString(original), classType);
+		} catch (JsonProcessingException e) {
+			fail("Failed to deep copy FormComponent: " + e.getMessage());
+			return null;
+		}
 	}
 }
