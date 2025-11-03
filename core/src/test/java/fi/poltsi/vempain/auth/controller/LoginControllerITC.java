@@ -6,7 +6,7 @@ import fi.poltsi.vempain.auth.api.PrivacyType;
 import fi.poltsi.vempain.auth.api.request.LoginRequest;
 import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.repository.AclRepository;
-import fi.poltsi.vempain.auth.repository.UserRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
 import fi.poltsi.vempain.auth.tools.AuthTools;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,18 +31,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class LoginControllerITC {
 
 	@Container
-	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
+	static  PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
 			.withDatabaseName("testdb")
 			.withUsername("testuser")
 			.withPassword("testpass");
 	@Autowired
-	private MockMvc mockMvc;
+	private MockMvc                mockMvc;
 	@Autowired
-	private UserRepository userRepository;
+	private UserAccountRepository  userAccountRepository;
 	@Autowired
-	private AclRepository aclRepository;
+	private AclRepository          aclRepository;
 	@Autowired
-	private ObjectMapper objectMapper;
+	private ObjectMapper           objectMapper;
 
 	@DynamicPropertySource
 	static void overrideProps(DynamicPropertyRegistry registry) {
@@ -54,8 +54,8 @@ public class LoginControllerITC {
 
 	@BeforeEach
 	void setUp() {
-		if (userRepository.findByLoginName("testuser1")
-						  .isEmpty()) {
+		if (userAccountRepository.findByLoginName("testuser1")
+								 .isEmpty()) {
 			// Create related ACL with all permissions set to true
 			var acl = fi.poltsi.vempain.auth.entity.Acl.builder()
 													   .userId(1L)
@@ -83,10 +83,10 @@ public class LoginControllerITC {
 								  .creator(1L)
 								  .created(Instant.now())
 								  .build();
-			user = userRepository.save(user);
+			user = userAccountRepository.save(user);
 
 			user.setCreator(user.getId());
-			userRepository.save(user);
+			userAccountRepository.save(user);
 		}
 	}
 

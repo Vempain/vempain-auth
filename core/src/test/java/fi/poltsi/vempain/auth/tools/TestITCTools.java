@@ -7,7 +7,7 @@ import fi.poltsi.vempain.auth.entity.Unit;
 import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.exception.VempainAclException;
 import fi.poltsi.vempain.auth.repository.AclRepository;
-import fi.poltsi.vempain.auth.repository.UserRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
 import fi.poltsi.vempain.auth.service.AclService;
 import fi.poltsi.vempain.auth.service.UnitService;
 import fi.poltsi.vempain.auth.service.UserService;
@@ -37,9 +37,9 @@ public class TestITCTools {
 	private final AclService     aclService;
 	private final AclRepository  aclRepository;
 	private final UserService    userService;
-	private final UnitService    unitService;
-	private final UserRepository userRepository;
-	private final EntityManager  entityManager;
+	private final UnitService           unitService;
+	private final UserAccountRepository userAccountRepository;
+	private final EntityManager         entityManager;
 
 	@Transactional
 	public Long generateAcl(Long userId, Long unitId, boolean read, boolean modify, boolean create, boolean delete) {
@@ -100,6 +100,7 @@ public class TestITCTools {
 	public Long generateUser(String password) {
 		// Note that here the user ID used to generate the ACL refers to the admin
 		var aclId = generateAcl(ADMIN_ID, null, true, true, true, true);
+		log.info("Generated ACL ID for new user: {}", aclId);
 		var user = UserAccount.builder()
 							  .aclId(aclId)
 							  .birthday(Instant.now()
@@ -186,5 +187,4 @@ public class TestITCTools {
 		var newUnit = unitService.save(unit);
 		return newUnit.getId();
 	}
-	/////////////////// Unit end
 }

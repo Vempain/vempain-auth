@@ -8,7 +8,7 @@ import fi.poltsi.vempain.auth.entity.Acl;
 import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.exception.VempainAclException;
 import fi.poltsi.vempain.auth.repository.AclRepository;
-import fi.poltsi.vempain.auth.repository.UserRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
 import fi.poltsi.vempain.auth.tools.AuthTools;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +27,11 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-	private final UserRepository userRepository;
+	private final UserAccountRepository userAccountRepository;
 	private final AclRepository  aclRepository;
 
 	public Iterable<UserAccount> findAll() {
-		return userRepository.findAll();
+		return userAccountRepository.findAll();
 	}
 
 	public UserResponse findUserResponseById(Long userId) {
@@ -80,7 +80,7 @@ public class UserService {
 							  .created(Instant.now())
 							  .build();
 
-		var newUser      = userRepository.save(user);
+		var newUser = userAccountRepository.save(user);
 		var userResponse = newUser.getUserResponse();
 		populateWithAcl(aclId, userResponse);
 		return userResponse;
@@ -120,28 +120,28 @@ public class UserService {
 		user.setModifier(AuthTools.getCurrentUserId());
 		user.setModified(Instant.now());
 
-		var newUser      = userRepository.save(user);
+		var newUser = userAccountRepository.save(user);
 		var userResponse = newUser.getUserResponse();
 		populateWithAcl(aclId, userResponse);
 		return userResponse;
 	}
 
 	public Optional<UserAccount> findById(Long userId) {
-		return userRepository.findById(userId);
+		return userAccountRepository.findById(userId);
 	}
 
 	public Optional<UserAccount> findByLogin(String login) {
-		return userRepository.findByLoginName(login);
+		return userAccountRepository.findByLoginName(login);
 	}
 
 	// TODO We should instead use a status field and mark the user as closed instead of deleting it since the user ID is located in many places
 	@Transactional(propagation = Propagation.REQUIRED)
 	public void lockUser(long userId) {
-		userRepository.lockByUserId(userId);
+		userAccountRepository.lockByUserId(userId);
 	}
 
 	public UserAccount save(UserAccount userAccount) {
-		return userRepository.save(userAccount);
+		return userAccountRepository.save(userAccount);
 	}
 
 	private void populateWithAcl(long aclId, UserResponse userResponse) {

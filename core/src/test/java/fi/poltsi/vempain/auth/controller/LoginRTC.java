@@ -2,25 +2,21 @@ package fi.poltsi.vempain.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.poltsi.vempain.auth.IntegrationTestSetup;
+import fi.poltsi.vempain.auth.TestApp;
 import fi.poltsi.vempain.auth.api.AccountStatus;
 import fi.poltsi.vempain.auth.api.PrivacyType;
 import fi.poltsi.vempain.auth.api.request.LoginRequest;
 import fi.poltsi.vempain.auth.entity.Unit;
 import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.repository.UnitRepository;
-import fi.poltsi.vempain.auth.repository.UserRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
 import fi.poltsi.vempain.auth.security.jwt.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -36,7 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(classes = LoginRTC.TestApp.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = TestApp.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 class LoginRTC extends IntegrationTestSetup {
 
@@ -45,11 +41,11 @@ class LoginRTC extends IntegrationTestSetup {
 	@Autowired
 	private ObjectMapper    objectMapper;
 	@Autowired
-	private PasswordEncoder passwordEncoder;
+	private PasswordEncoder       passwordEncoder;
 	@Autowired
-	private UserRepository  userRepository;
+	private UserAccountRepository userAccountRepository;
 	@Autowired
-	private UnitRepository  unitRepository;
+	private UnitRepository        unitRepository;
 	@MockitoBean
 	private JwtUtils        jwtUtils;
 
@@ -83,7 +79,7 @@ class LoginRTC extends IntegrationTestSetup {
 							  .creator(ADMIN_ID)
 							  .created(Instant.now())
 							  .build();
-		userRepository.save(user);
+		userAccountRepository.save(user);
 
 		Mockito.when(jwtUtils.generateJwtToken(any()))
 			   .thenReturn("test.jwt.token");
@@ -103,13 +99,5 @@ class LoginRTC extends IntegrationTestSetup {
 			   .andExpect(status().isOk())
 			   .andExpect(jsonPath("$.token", notNullValue()))
 			   .andExpect(jsonPath("$.login").value("testuser"));
-	}
-
-	@SpringBootConfiguration
-	@EnableAutoConfiguration
-	@EnableJpaRepositories(basePackages = "fi.poltsi.vempain.auth.repository")
-	@EntityScan(basePackages = "fi.poltsi.vempain.auth.entity")
-	@ComponentScan(basePackages = "fi.poltsi.vempain.auth")
-	static class TestApp {
 	}
 }
