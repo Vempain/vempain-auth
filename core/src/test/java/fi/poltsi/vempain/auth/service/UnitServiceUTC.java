@@ -1,6 +1,7 @@
 package fi.poltsi.vempain.auth.service;
 
 import fi.poltsi.vempain.auth.entity.Unit;
+import fi.poltsi.vempain.auth.repository.AclRepository;
 import fi.poltsi.vempain.auth.repository.UnitRepository;
 import fi.poltsi.vempain.auth.tools.TestUTCTools;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 
+import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -24,7 +26,9 @@ class UnitServiceUTC {
 	private final static int count = 10;
 
 	@Mock
-	UnitRepository unitRepository;
+	private UnitRepository unitRepository;
+	@Mock
+	private AclRepository  aclRepository;
 
 	@InjectMocks
 	private UnitService unitService;
@@ -46,7 +50,11 @@ class UnitServiceUTC {
 	@Test
 	void findByIdOk() {
 		var unit = TestUTCTools.generateUnit(1L);
+		var acl = TestUTCTools.generateAcl(1L, 1L, ADMIN_ID, null);
+		unit.setAclId(1L);
 		when(unitRepository.findById(anyLong())).thenReturn(Optional.of(unit));
+		when(aclRepository.getAclByAclId(acl.getAclId()))
+				.thenReturn(List.of(acl));
 
 		try {
 			var unitResponse = unitService.findById(1L);
