@@ -41,7 +41,7 @@ dependencies {
 	// https://mvnrepository.com/artifact/org.postgresql/postgresql
 	implementation "org.postgresql:postgresql:42.7.8"
 	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-	implementation "org.apache.commons:commons-lang3:3.18.0"
+	implementation "org.apache.commons:commons-lang3:3.19.0"
 	testImplementation "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
 	testImplementation platform("org.junit:junit-bom:${junitVersion}")
 	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
@@ -49,7 +49,7 @@ dependencies {
 	testImplementation "org.testcontainers:postgresql:${testContainersVersion}"
 	testImplementation "org.flywaydb:flyway-core:${flywayVersion}"
 	// https://mvnrepository.com/artifact/org.springframework.security/spring-security-test
-	testImplementation "org.springframework.security:spring-security-test:6.5.5"
+	testImplementation "org.springframework.security:spring-security-test:6.5.6"
 	// https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter
 	testImplementation "org.mockito:mockito-junit-jupiter:5.20.0"
 	compileOnly 'org.projectlombok:lombok'
