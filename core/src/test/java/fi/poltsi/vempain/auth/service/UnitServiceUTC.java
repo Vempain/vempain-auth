@@ -62,7 +62,7 @@ class UnitServiceUTC {
 		try {
 			unitService.deleteById(1L);
 		} catch (Exception e) {
-			fail("Should not have received an exception when deleting a unit by ID " + e.getMessage());
+			fail("Should not have received an exception when deleting a unit by ID: " + e.getMessage());
 		}
 	}
 }
