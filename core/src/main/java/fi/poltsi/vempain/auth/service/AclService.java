@@ -9,7 +9,7 @@ import fi.poltsi.vempain.auth.exception.VempainAclException;
 import fi.poltsi.vempain.auth.exception.VempainEntityNotFoundException;
 import fi.poltsi.vempain.auth.repository.AclRepository;
 import fi.poltsi.vempain.auth.repository.UnitRepository;
-import fi.poltsi.vempain.auth.repository.UserRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,9 +26,9 @@ import java.util.stream.StreamSupport;
 @Service
 @RequiredArgsConstructor
 public class AclService {
-    private final AclRepository  aclRepository;
-	private final UserRepository userRepository;
-	private final UnitRepository unitRepository;
+	private final AclRepository         aclRepository;
+	private final UserAccountRepository userAccountRepository;
+	private final UnitRepository        unitRepository;
 
 	public List<Acl> findAll() {
         return aclRepository.findAll();
@@ -247,7 +247,7 @@ public class AclService {
 
 		if (userId != null) {
 			log.info("User ID needs to be checked: {}", userId);
-			var optionalUser = userRepository.findById(userId);
+			var optionalUser = userAccountRepository.findById(userId);
 
 			if (optionalUser.isEmpty()) {
 				log.error("User does not exist: {}", userId);

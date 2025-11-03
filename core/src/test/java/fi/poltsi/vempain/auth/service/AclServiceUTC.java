@@ -6,7 +6,7 @@ import fi.poltsi.vempain.auth.exception.VempainAclException;
 import fi.poltsi.vempain.auth.exception.VempainEntityNotFoundException;
 import fi.poltsi.vempain.auth.repository.AclRepository;
 import fi.poltsi.vempain.auth.repository.UnitRepository;
-import fi.poltsi.vempain.auth.repository.UserRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
 import fi.poltsi.vempain.auth.tools.TestUTCTools;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,11 +42,11 @@ class AclServiceUTC {
 	private final static long itemCount = 10L;
 
 	@Mock
-	AclRepository  aclRepository;
+	AclRepository         aclRepository;
 	@Mock
-	UserRepository userRepository;
+	UserAccountRepository userAccountRepository;
 	@Mock
-	UnitRepository unitRepository;
+	UnitRepository        unitRepository;
 
 	@InjectMocks
 	private AclService aclService;
@@ -54,7 +54,7 @@ class AclServiceUTC {
 	@BeforeEach
 	void setUp() {
 		reset(aclRepository);
-		reset(userRepository);
+		reset(userAccountRepository);
 		reset(unitRepository);
 	}
 
@@ -132,7 +132,7 @@ class AclServiceUTC {
 		Acl acl = TestUTCTools.generateAcl(1L, 1L, ADMIN_ID, null);
 		when(aclRepository.save(acl)).thenReturn(acl);
 		var optionalUser = Optional.of(TestUTCTools.generateUser(ADMIN_ID));
-		when(userRepository.findById(ADMIN_ID)).thenReturn(optionalUser);
+		when(userAccountRepository.findById(ADMIN_ID)).thenReturn(optionalUser);
 
 		try {
 			aclService.save(acl);
@@ -144,7 +144,7 @@ class AclServiceUTC {
 	@Test
 	void saveWithOnePermissionYesOk() {
 		var optionalUser = Optional.of(TestUTCTools.generateUser(ADMIN_ID));
-		when(userRepository.findById(ADMIN_ID)).thenReturn(optionalUser);
+		when(userAccountRepository.findById(ADMIN_ID)).thenReturn(optionalUser);
 
 		Integer[] trigger = {1, 2, 3, 4};
 
@@ -242,7 +242,7 @@ class AclServiceUTC {
 	@Test
 	void saveWithAllPermissionsNoFail() {
 		var optionalUser = Optional.of(TestUTCTools.generateUser(1L));
-		when(userRepository.findById(ADMIN_ID)).thenReturn(optionalUser);
+		when(userAccountRepository.findById(ADMIN_ID)).thenReturn(optionalUser);
 
 		Acl acl = TestUTCTools.generateAcl(1L, 1L, 1L, null);
 		acl.setReadPrivilege(false);
@@ -264,7 +264,7 @@ class AclServiceUTC {
 				   .update(1L, 1L, null, true, true, true, true);
 		Acl acl          = TestUTCTools.generateAcl(1L, 1L, 1L, null);
 		var optionalUser = Optional.of(TestUTCTools.generateUser(acl.getUserId()));
-		when(userRepository.findById(acl.getUserId())).thenReturn(optionalUser);
+		when(userAccountRepository.findById(acl.getUserId())).thenReturn(optionalUser);
 
 		try {
 			aclService.update(acl);
@@ -277,7 +277,7 @@ class AclServiceUTC {
 	void updateNoIdFail() {
 		Acl acl          = TestUTCTools.generateAcl(null, 1L, ADMIN_ID, null);
 		var optionalUser = Optional.of(TestUTCTools.generateUser(ADMIN_ID));
-		when(userRepository.findById(ADMIN_ID)).thenReturn(optionalUser);
+		when(userAccountRepository.findById(ADMIN_ID)).thenReturn(optionalUser);
 
 		try {
 			aclService.update(acl);
@@ -294,7 +294,7 @@ class AclServiceUTC {
 
 		for (Acl acl : acls) {
 			var optionalUser = Optional.of(TestUTCTools.generateUser(acl.getUserId()));
-			when(userRepository.findById(acl.getUserId())).thenReturn(optionalUser);
+			when(userAccountRepository.findById(acl.getUserId())).thenReturn(optionalUser);
 			requests.add(AclRequest.builder()
 								   .id(acl.getId())
 								   .aclId(acl.getAclId())
@@ -339,7 +339,7 @@ class AclServiceUTC {
 								   .build());
 			when(aclRepository.getAclByAclId(acl.getAclId())).thenReturn(new ArrayList<>());
 			var optionalUser = Optional.of(TestUTCTools.generateUser(1L));
-			when(userRepository.findById(acl.getUserId())).thenReturn(optionalUser);
+			when(userAccountRepository.findById(acl.getUserId())).thenReturn(optionalUser);
 		}
 
 		when(aclRepository.save(any(Acl.class))).thenAnswer(a -> a.getArgument(0));
@@ -404,7 +404,7 @@ class AclServiceUTC {
 
 		for (Acl acl : acls) {
 			var optionalUser = Optional.of(TestUTCTools.generateUser(acl.getUserId()));
-			when(userRepository.findById(acl.getUserId())).thenReturn(optionalUser);
+			when(userAccountRepository.findById(acl.getUserId())).thenReturn(optionalUser);
 
 			requests.add(AclRequest.builder()
 								   .id(null)
@@ -477,7 +477,7 @@ class AclServiceUTC {
 
 		for (Acl acl : acls) {
 			var optionalUser = Optional.of(TestUTCTools.generateUser(acl.getUserId()));
-			when(userRepository.findById(acl.getUserId())).thenReturn(optionalUser);
+			when(userAccountRepository.findById(acl.getUserId())).thenReturn(optionalUser);
 			when(aclRepository.save(acl)).thenReturn(acl);
 		}
 
@@ -527,7 +527,7 @@ class AclServiceUTC {
 
 		for (var acl : acls) {
 			var optionalUser = Optional.of(TestUTCTools.generateUser(acl.getUserId()));
-			when(userRepository.findById(acl.getUserId())).thenReturn(optionalUser);
+			when(userAccountRepository.findById(acl.getUserId())).thenReturn(optionalUser);
 		}
 
 		doThrow(new RuntimeException("Test exception")).when(aclRepository)

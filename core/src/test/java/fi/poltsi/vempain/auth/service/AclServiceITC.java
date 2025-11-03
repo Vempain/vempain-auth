@@ -1,6 +1,7 @@
 package fi.poltsi.vempain.auth.service;
 
 import fi.poltsi.vempain.auth.IntegrationTestSetup;
+import fi.poltsi.vempain.auth.TestApp;
 import fi.poltsi.vempain.auth.entity.Acl;
 import fi.poltsi.vempain.auth.entity.Unit;
 import fi.poltsi.vempain.auth.exception.VempainAclException;
@@ -10,12 +11,7 @@ import fi.poltsi.vempain.auth.repository.UnitRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.time.Instant;
 import java.util.stream.StreamSupport;
@@ -28,23 +24,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @Slf4j
-@SpringBootTest(classes = AclServiceITC.TestApp.class)
+@SpringBootTest(classes = TestApp.class)
 class AclServiceITC extends IntegrationTestSetup {
-	static final long initCount = 5;
-	static final long ACL_MULTIPILIER = 7L;
+	static final long           initCount      = 5;
+	static final long           ACL_MULTIPLIER = 7L;
 	@Autowired
-	private AclService     aclService;
+	private      AclService     aclService;
 	@Autowired
-	private AclRepository  aclRepository;
+	private      AclRepository  aclRepository;
 	@Autowired
-	private UnitRepository unitRepository;
+	private      UnitRepository unitRepository;
 
 	@Test
 	void getAllOk() {
 		testITCTools.generateAcls(initCount);
 		var acls = aclService.findAll();
 		assertTrue(StreamSupport.stream(acls.spliterator(), false)
-								.count() >= ACL_MULTIPILIER * initCount);
+								.count() >= ACL_MULTIPLIER * initCount);
 	}
 
 	@Test
@@ -159,11 +155,9 @@ class AclServiceITC extends IntegrationTestSetup {
 
 	@Test
 	void updateFailsWithNegativeAclId() {
-		testITCTools.generateAcls(initCount);
-		Iterable<Acl> acls = aclService.findAclByAclId(initCount - 1);
-
+		var           aclIds = testITCTools.generateAcls(initCount);
+		Iterable<Acl> acls   = aclService.findAclByAclId(aclIds.getFirst());
 		for (Acl acl : acls) {
-			// The aclId is set to -1
 			try {
 				acl.setAclId(-1L);
 				aclService.update(acl);
@@ -196,11 +190,9 @@ class AclServiceITC extends IntegrationTestSetup {
 
 	@Test
 	void updateFailsWithUserAndUnitSet() {
-		testITCTools.generateAcls(initCount);
-		Iterable<Acl> acls = aclService.findAclByAclId(initCount - 1);
-
+		var           aclIds = testITCTools.generateAcls(initCount);
+		Iterable<Acl> acls   = aclService.findAclByAclId(aclIds.getFirst());
 		for (Acl acl : acls) {
-			// Update with both user and unit set
 			try {
 				acl.setUserId(1L);
 				acl.setUnitId(1L);
@@ -215,11 +207,9 @@ class AclServiceITC extends IntegrationTestSetup {
 
 	@Test
 	void updateWithAllPermissionsNoFail() {
-		testITCTools.generateAcls(initCount);
-		Iterable<Acl> acls = aclService.findAclByAclId(initCount - 1);
-
+		var           aclIds = testITCTools.generateAcls(initCount);
+		Iterable<Acl> acls   = aclService.findAclByAclId(aclIds.getFirst());
 		for (Acl acl : acls) {
-			// All permissions set to no does not make sense
 			try {
 				acl.setReadPrivilege(false);
 				acl.setCreatePrivilege(false);
@@ -237,24 +227,16 @@ class AclServiceITC extends IntegrationTestSetup {
 
 	@Test
 	void createFindDeleteAclsOk() throws Exception {
+		var nextAclForUnit = aclService.getNextAclId();
 		var unit = Unit.builder()
 					   .name("ACL_UNIT")
-					   // add required audit fields
 					   .creator(1L)
 					   .created(Instant.now())
-					   // if Unit extends AbstractVempainEntity, aclId must be positive
-					   .aclId(1L)
+					   .aclId(nextAclForUnit)
 					   .build();
 		unit = unitRepository.save(unit);
 
-		var aclId = aclService.createNewAcl(
-				null,               // userId
-				unit.getId(),       // unitId
-				true,               // readPrivilege
-				false,              // createPrivilege
-				false,              // modifyPrivilege
-				false               // deletePrivilege
-		);
+		var aclId = aclService.createNewAcl(null, unit.getId(), true, false, false, false);
 
 		var stored = aclService.findAclByAclId(aclId);
 		assertFalse(stored.isEmpty());
@@ -264,17 +246,5 @@ class AclServiceITC extends IntegrationTestSetup {
 		aclService.deleteByAclId(aclId);
 		assertTrue(aclRepository.getAclByAclId(aclId)
 								.isEmpty());
-	}
-
-	@SpringBootConfiguration
-	@EnableAutoConfiguration
-	@EnableJpaRepositories(basePackages = "fi.poltsi.vempain.auth.repository")
-	@EntityScan(basePackages = "fi.poltsi.vempain.auth.entity")
-	@ComponentScan(basePackages = {
-			"fi.poltsi.vempain.auth.service",
-			"fi.poltsi.vempain.auth.repository",
-			"fi.poltsi.vempain.auth.tools" // added so TestITCTools is discovered
-	})
-	static class TestApp {
 	}
 }
