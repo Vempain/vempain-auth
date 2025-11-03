@@ -12,5 +12,4 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan(basePackages = "fi.poltsi.vempain.auth.entity")
 @ComponentScan(basePackages = "fi.poltsi.vempain.auth")
 public class TestApp {
-	// ...existing code...
 }
