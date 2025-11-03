@@ -92,12 +92,12 @@ public abstract class IntegrationTestSetup {
 			// 5) Ensure admin ACL anchor exists in ACL table (acl_id from admin user_account)
 			//    If Flyway hasn't created it, create one with permissive privileges.
 			s.execute("""
-							  	INSERT INTO acl (acl_id, user_id, unit_id, read_privilege, create_privilege, modify_privilege, delete_privilege)
-							  	SELECT ua.acl_id, ua.id, NULL, TRUE, TRUE, TRUE, TRUE
-							  	FROM user_account ua
-							  	WHERE ua.id = 1
-							  	  AND NOT EXISTS (SELECT 1 FROM acl a WHERE a.acl_id = ua.acl_id)
-							  """);
+				INSERT INTO acl (acl_id, user_id, unit_id, read_privilege, create_privilege, modify_privilege, delete_privilege)
+				SELECT ua.acl_id, ua.id, NULL, TRUE, TRUE, TRUE, TRUE
+				FROM user_account ua
+				WHERE ua.id = 1
+				  AND NOT EXISTS (SELECT 1 FROM acl a WHERE a.acl_id = ua.acl_id)
+			""");
 		}
 		// Clear the persistence context to avoid stale entities
 		entityManager.clear();
