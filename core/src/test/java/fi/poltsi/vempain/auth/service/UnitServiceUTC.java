@@ -53,7 +53,7 @@ class UnitServiceUTC {
 			assertNotNull(unitResponse);
 			assertEquals(1L, unitResponse.getId());
 		} catch (Exception e) {
-			fail("Should not have received an exception when fetching a unit " + e.getMessage());
+			fail("Should not have received an exception when fetching a unit: " + e.getMessage());
 		}
 	}
 
@@ -62,7 +62,7 @@ class UnitServiceUTC {
 		try {
 			unitService.deleteById(1L);
 		} catch (Exception e) {
-			fail("Should not have received an exception when deleting a unit by ID " + e.getMessage());
+			fail("Should not have received an exception when deleting a unit by ID: " + e.getMessage());
 		}
 	}
 }
