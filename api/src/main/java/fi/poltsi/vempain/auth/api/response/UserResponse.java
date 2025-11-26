@@ -8,7 +8,9 @@ import fi.poltsi.vempain.auth.api.PrivacyType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.Instant;
@@ -16,6 +18,8 @@ import java.time.Instant;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 @Data
+@Jacksonized
+@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Schema(description = "Item depicting a user item")
