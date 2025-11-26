@@ -3,6 +3,8 @@ package fi.poltsi.vempain.auth.api.response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import fi.poltsi.vempain.auth.api.AccountStatus;
+import fi.poltsi.vempain.auth.api.PrivacyType;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -59,6 +61,10 @@ public class ResponseDeserializationUTC {
 		assertEquals(Instant.parse(birthday), user.getBirthday());
 		assertEquals("Some desc", user.getDescription());
 		assertEquals(false, user.isPrivateUser());
+		assertEquals("Wallace st 12", user.getStreet());
+		assertEquals("01234", user.getPob());
+		assertEquals(PrivacyType.PRIVATE, user.getPrivacyType());
+		assertEquals(AccountStatus.ACTIVE, user.getStatus());
 	}
 
 	@Test
