@@ -3,6 +3,8 @@ package fi.poltsi.vempain.auth.api.response;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import fi.poltsi.vempain.auth.api.AccountStatus;
+import fi.poltsi.vempain.auth.api.PrivacyType;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -23,6 +25,7 @@ public class ResponseDeserializationUTC {
 		UnitResponse unit = mapper.readValue(json, UnitResponse.class);
 
 		assertNotNull(unit);
+		assertEquals(10L, unit.getId());
 		assertEquals("users", unit.getName());
 		assertEquals("Normal users", unit.getDescription());
 	}
@@ -60,6 +63,10 @@ public class ResponseDeserializationUTC {
 		assertEquals(Instant.parse(birthday), user.getBirthday());
 		assertEquals("Some desc", user.getDescription());
 		assertFalse(user.isPrivateUser());
+		assertEquals("Wallace st 12", user.getStreet());
+		assertEquals("01234", user.getPob());
+		assertEquals(PrivacyType.PRIVATE, user.getPrivacyType());
+		assertEquals(AccountStatus.ACTIVE, user.getStatus());
 	}
 
 	@Test
@@ -87,11 +94,13 @@ public class ResponseDeserializationUTC {
 		assertEquals("abc", jwt.getToken());
 		assertEquals(1L, jwt.getId());
 		assertEquals("admin", jwt.getLogin());
+		assertEquals("Admin", jwt.getNickname());
+		assertEquals("admin@example.com", jwt.getEmail());
 		assertNotNull(jwt.getUnits());
 		assertEquals(1, jwt.getUnits()
 						   .size());
-		UnitResponse u = jwt.getUnits()
+		UnitResponse unit = jwt.getUnits()
 							.get(0);
-		assertEquals("users", u.getName());
+		assertEquals("users", unit.getName());
 	}
 }
