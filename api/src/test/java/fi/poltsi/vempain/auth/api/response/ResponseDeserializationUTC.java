@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ResponseDeserializationUTC {
@@ -61,7 +62,7 @@ public class ResponseDeserializationUTC {
 		assertEquals("test@example.com", user.getEmail());
 		assertEquals(Instant.parse(birthday), user.getBirthday());
 		assertEquals("Some desc", user.getDescription());
-		assertEquals(false, user.isPrivateUser());
+		assertFalse(user.isPrivateUser());
 		assertEquals("Wallace st 12", user.getStreet());
 		assertEquals("01234", user.getPob());
 		assertEquals(PrivacyType.PRIVATE, user.getPrivacyType());
