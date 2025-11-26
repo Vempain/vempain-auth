@@ -89,8 +89,8 @@ public class ResponseDeserializationUTC {
 		assertNotNull(jwt.getUnits());
 		assertEquals(1, jwt.getUnits()
 						   .size());
-		UnitResponse u = jwt.getUnits()
+		UnitResponse unit = jwt.getUnits()
 							.get(0);
-		assertEquals("users", u.getName());
+		assertEquals("users", unit.getName());
 	}
 }
