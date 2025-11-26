@@ -22,6 +22,7 @@ public class ResponseDeserializationUTC {
 		UnitResponse unit = mapper.readValue(json, UnitResponse.class);
 
 		assertNotNull(unit);
+		assertEquals(10L, unit.getId());
 		assertEquals("users", unit.getName());
 		assertEquals("Normal users", unit.getDescription());
 	}
