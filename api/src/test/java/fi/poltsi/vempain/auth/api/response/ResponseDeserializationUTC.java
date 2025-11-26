@@ -86,6 +86,8 @@ public class ResponseDeserializationUTC {
 		assertEquals("abc", jwt.getToken());
 		assertEquals(1L, jwt.getId());
 		assertEquals("admin", jwt.getLogin());
+		assertEquals("Admin", jwt.getNickname());
+		assertEquals("admin@example.com", jwt.getEmail());
 		assertNotNull(jwt.getUnits());
 		assertEquals(1, jwt.getUnits()
 						   .size());
