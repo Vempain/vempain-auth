@@ -29,6 +29,7 @@ public class AclService {
 	private final AclRepository         aclRepository;
 	private final UserAccountRepository userAccountRepository;
 	private final UnitRepository        unitRepository;
+	private final AclIdGenerator aclIdGenerator;
 
 	public List<Acl> findAll() {
         return aclRepository.findAll();
@@ -39,16 +40,21 @@ public class AclService {
     }
 
     public long getNextAclId() {
-		var acls = aclRepository.findAll();
-
-		for (Acl acl : acls) {
-			log.debug("Current list of acls in database: permission ID {} ACL ID {} User ID {} Unit ID {}",
-					 acl.getId(), acl.getAclId(), acl.getUserId(), acl.getUnitId());
+		// Use DB-backed hi/lo generator to avoid concurrency issues when available
+		if (this.aclIdGenerator != null) {
+			try {
+				long next = aclIdGenerator.nextAclId();
+				log.info("Next available ACL ID (via generator): {}", next);
+				return next;
+			} catch (Exception e) {
+				log.warn("AclIdGenerator failed, falling back to repository-based allocator", e);
+			}
 		}
 
-		var nextAclId = aclRepository.getNextAvailableAclId();
-		log.info("Next available ACL ID: {}", nextAclId);
-        return nextAclId;
+		// Fallback for unit tests or if generator is not available: repository-based next available id
+		long fallback = aclRepository.getNextAvailableAclId();
+		log.info("Next available ACL ID (via repository fallback): {}", fallback);
+		return fallback;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

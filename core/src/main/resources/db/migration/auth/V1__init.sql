@@ -69,3 +69,7 @@ CREATE TABLE user_unit
 );
 
 -- End of authentication ACL handling
+
+-- Create sequence used by the hi/lo ACL ID generator
+CREATE SEQUENCE IF NOT EXISTS acl_hi_seq;
+
