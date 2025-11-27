@@ -10,10 +10,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AclIdGenerator {
 	private final    JdbcTemplate jdbcTemplate;
 	private final    int          blockSize;
-	private final    AtomicLong   counter     = new AtomicLong(0L);
-	// current block base (inclusive) and end (inclusive)
-	private volatile long         currentBase = 0L;
-	private volatile long         currentMax  = -1L;
+	private final    AtomicLong nextId      = new AtomicLong(1L);
+	private volatile long       currentBase = 0L;
+	private volatile long       currentMax  = 0L;
 
 	public AclIdGenerator(JdbcTemplate jdbcTemplate, @Value("${vempain.acl.block-size:1000}") int blockSize) {
 		this.jdbcTemplate = jdbcTemplate;
@@ -22,39 +21,28 @@ public class AclIdGenerator {
 
 	public long nextAclId() {
 		while (true) {
-			var id   = counter.incrementAndGet();
-			var base = currentBase;
-			var max  = currentMax;
+			var candidate = nextId.getAndIncrement();
+			var max       = currentMax;
 
-			if (id <= (max - base + 1)) {
-				return base + id - 1;
+			if (candidate <= max) {
+				return candidate;
 			}
 
-			// need to refill block
 			synchronized (this) {
-				// double-check after acquiring lock
-				var used = counter.get();
-
-				if (used <= (currentMax - currentBase + 1)) {
-					var allocatedIndex = counter.incrementAndGet();
-					return currentBase + allocatedIndex - 1;
+				if (candidate <= currentMax) {
+					continue;
 				}
 
-				// Reserve next hi from DB sequence
-				var hi = jdbcTemplate.queryForObject("SELECT nextval('acl_hi_seq')", Long.class);
-				// compute new base and max
-				var newBase = (hi - 1) * (long) blockSize + 1L;
-				var newMax  = hi * (long) blockSize;
+				var hi      = jdbcTemplate.queryForObject("SELECT nextval('acl_hi_seq')", Long.class);
+				var newBase = (hi - 1L) * blockSize + 1L;
+				var newMax  = hi * blockSize;
 
-				this.currentBase = newBase;
-				this.currentMax  = newMax;
-				this.counter.set(0L);
+				currentBase = newBase;
+				currentMax  = newMax;
+				nextId.set(newBase + 1L);
 
-				// allocate first id from new block
-				var allocatedIndex = counter.incrementAndGet();
-				return currentBase + allocatedIndex - 1;
+				return newBase;
 			}
 		}
 	}
 }
-
