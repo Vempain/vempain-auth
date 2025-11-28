@@ -345,7 +345,7 @@ public class AclService {
 	 */
 	@Transactional(propagation = Propagation.REQUIRED)
 	public Acl createUniqueAcl(Long userId, Long unitId, boolean readPrivilege, boolean createPrivilege, boolean modifyPrivilege,
-							   boolean deletePrivilege, Long creator) throws VempainAclException {
+							   boolean deletePrivilege) throws VempainAclException {
 		// Validate minimal fields via verifyAcl by providing a temporary aclId (1) — validation requires aclId > 0 so skip verifyAcl here
 		// Instead perform only necessary checks for user/unit existence
 		if (userId == null && unitId == null) {

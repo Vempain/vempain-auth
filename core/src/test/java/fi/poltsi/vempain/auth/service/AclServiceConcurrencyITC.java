@@ -73,7 +73,7 @@ public class AclServiceConcurrencyITC {
 		for (int i = 0; i < ops; i++) {
 			ex.submit(() -> {
 				try {
-					var acl = aclService.createUniqueAcl(1L, null, true, true, true, true, 1L);
+					var acl = aclService.createUniqueAcl(1L, null, true, true, true, true);
 
 					if (acl == null) {
 						errors.add(new IllegalStateException("Returned null"));

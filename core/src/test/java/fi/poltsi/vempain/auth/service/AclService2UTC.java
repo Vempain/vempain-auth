@@ -61,7 +61,7 @@ class AclService2UTC {
 		assertTrue(userAccountRepository.findById(2L)
 										.isPresent());
 
-		Acl result = service.createUniqueAcl(2L, null, true, true, true, true, 1L);
+		Acl result = service.createUniqueAcl(2L, null, true, true, true, true);
 
 		assertNotNull(result);
 		assertEquals(123L, result.getAclId());
