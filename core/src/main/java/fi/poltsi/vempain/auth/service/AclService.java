@@ -338,4 +338,45 @@ public class AclService {
         save(acl);
         return acl.getAclId();
     }
+
+	/**
+	 * Atomically allocate a new acl_id and persist the Acl row in a single DB statement using the repository custom insert
+	 * that leverages the database sequence. This avoids race conditions in concurrent environments.
+	 */
+	@Transactional(propagation = Propagation.REQUIRED)
+	public Acl createUniqueAcl(Long userId, Long unitId, boolean readPrivilege, boolean createPrivilege, boolean modifyPrivilege,
+							   boolean deletePrivilege, Long creator) throws VempainAclException {
+		// Validate minimal fields via verifyAcl by providing a temporary aclId (1) — validation requires aclId > 0 so skip verifyAcl here
+		// Instead perform only necessary checks for user/unit existence
+		if (userId == null && unitId == null) {
+			throw new VempainAclException("Both user and unit are null");
+		}
+
+		if (userId != null) {
+			if (userAccountRepository.findById(userId)
+									 .isEmpty()) {
+				throw new VempainAclException("Invalid user ID given in the ACL");
+			}
+		}
+		if (unitId != null) {
+			if (unitRepository.findById(unitId)
+							  .isEmpty()) {
+				throw new VempainAclException("Invalid unit ID given in the ACL");
+			}
+		}
+
+		// Build the Acl entity to be inserted; aclId will be assigned by the DB sequence in the custom repository method
+		Acl toInsert = Acl.builder()
+						  .userId(userId)
+						  .unitId(unitId)
+						  .readPrivilege(readPrivilege)
+						  .createPrivilege(createPrivilege)
+						  .modifyPrivilege(modifyPrivilege)
+						  .deletePrivilege(deletePrivilege)
+						  .build();
+
+		// Delegate to custom repository method which will use nextval(...) and RETURNING to atomically insert and return the Acl
+		Acl saved = aclRepository.insertWithNextAclId(toInsert);
+		return saved;
+	}
 }

@@ -1,12 +1,11 @@
 package fi.poltsi.vempain.auth;
 
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 
-@SpringBootConfiguration
+@Configuration
 @EnableAutoConfiguration
 @ComponentScan(basePackages = "fi.poltsi.vempain.auth")
 public class TestApplicationConfig {
 }
-

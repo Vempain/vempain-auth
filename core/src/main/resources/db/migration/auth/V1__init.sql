@@ -44,6 +44,16 @@ ALTER TABLE acl
 ALTER TABLE acl
 	ADD CONSTRAINT acl_unique_acl_id_user_id_unit_id UNIQUE (acl_id, user_id, unit_id);
 
+-- Create a dedicated sequence for acl.acl_id and initialize it to max(acl_id)+1 to avoid collisions
+CREATE SEQUENCE IF NOT EXISTS acl_acl_id_seq AS BIGINT;
+
+-- Set the sequence next value to max(acl_id)+1 so that nextval will return a safe, non-colliding value
+SELECT setval('acl_acl_id_seq', COALESCE((SELECT MAX(acl_id) FROM acl), 0) + 1, false);
+
+-- Optionally set default for acl.acl_id to use the sequence for future inserts
+ALTER TABLE acl
+	ALTER COLUMN acl_id SET DEFAULT nextval('acl_acl_id_seq');
+
 CREATE TABLE unit
 (
 	id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
