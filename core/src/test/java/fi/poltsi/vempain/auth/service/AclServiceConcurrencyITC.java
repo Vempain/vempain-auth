@@ -48,15 +48,6 @@ public class AclServiceConcurrencyITC {
 	@Autowired
 	private AclService aclService;
 
-	@BeforeAll
-	void beforeAll() {
-		// Ensure DB migrations applied by Spring Boot Flyway auto-configuration
-	}
-
-	@AfterAll
-	void afterAll() {
-		// cleanup
-	}
 
 	@Test
 	void allocatesUniqueIdsUnderConcurrency() throws Exception {
