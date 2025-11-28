@@ -14,7 +14,7 @@ import java.util.List;
 
 @Repository
 @Transactional(propagation = Propagation.SUPPORTS)
-public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>, CrudRepository<Acl, Long> {
+public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>, CrudRepository<Acl, Long>, AclRepositoryCustom {
 	@Query("FROM Acl ORDER BY aclId ASC")
 	List<Acl> findAll();
 
