@@ -43,7 +43,7 @@ setup_database_container() {
     echo "Database setup for ${db_name} with schema ${schema_name} completed."
 }
 
-# Setup first database for vempain_file
+# Setup database for vempain_auth
 setup_database_container "vempain_auth_db" "vempain_auth" "vempain_auth" "vempain_auth_password" 5431
 
 echo "All databases setup completed."
