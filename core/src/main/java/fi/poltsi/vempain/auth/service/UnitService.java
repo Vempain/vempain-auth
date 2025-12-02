@@ -83,7 +83,7 @@ public class UnitService {
 
 	@Transactional(propagation = Propagation.REQUIRED)
 	public UnitResponse createUnit(UnitRequest unitRequest) {
-		var aclId = aclRepository.getNextAvailableAclId();
+		var aclId = aclRepository.getNextAclId();
 
 		try {
 			saveAclRequests(aclId, unitRequest.getAcls());

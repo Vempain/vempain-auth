@@ -48,7 +48,7 @@ public class UserService {
 	@Transactional(propagation = Propagation.REQUIRED)
 	public UserResponse createUser(UserRequest userRequest) {
 		// We need to manually handle the storing of the ACL since it is not a part of the user entity
-		var aclId = aclRepository.getNextAvailableAclId();
+		var aclId = aclRepository.getNextAclId();
 		try {
 			saveAclRequests(aclId, userRequest.getAcls());
 		} catch (VempainAclException e) {

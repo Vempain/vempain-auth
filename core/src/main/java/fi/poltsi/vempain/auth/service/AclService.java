@@ -29,7 +29,6 @@ public class AclService {
 	private final AclRepository         aclRepository;
 	private final UserAccountRepository userAccountRepository;
 	private final UnitRepository        unitRepository;
-	private final AclIdGenerator aclIdGenerator;
 
 	public List<Acl> findAll() {
         return aclRepository.findAll();
@@ -40,21 +39,7 @@ public class AclService {
     }
 
     public long getNextAclId() {
-		// Use DB-backed hi/lo generator to avoid concurrency issues when available
-		if (this.aclIdGenerator != null) {
-			try {
-				long next = aclIdGenerator.nextAclId();
-				log.info("Next available ACL ID (via generator): {}", next);
-				return next;
-			} catch (Exception e) {
-				log.warn("AclIdGenerator failed, falling back to repository-based allocator", e);
-			}
-		}
-
-		// Fallback for unit tests or if generator is not available: repository-based next available id
-		long fallback = aclRepository.getNextAvailableAclId();
-		log.info("Next available ACL ID (via repository fallback): {}", fallback);
-		return fallback;
+		return aclRepository.getNextAclId();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -103,7 +88,7 @@ public class AclService {
 
 		// If the first entry has an aclId of 0L, then they all are new and we need to fetch a new ACL ID, see the TODO above
 		if (aclId < 1) {
-			aclId = aclRepository.getNextAvailableAclId();
+			aclId = aclRepository.getNextAclId();
 		}
 
 		for (AclRequest request : requests) {
@@ -325,7 +310,7 @@ public class AclService {
     @Transactional(propagation = Propagation.REQUIRED)
     public Long createNewAcl(Long userId, Long unitId, boolean readPrivilege, boolean createPrivilege, boolean modifyPrivilege,
 							 boolean deletePrivilege) throws VempainAclException {
-        var aclId = aclRepository.getNextAvailableAclId();
+		var aclId = aclRepository.getNextAclId();
         var acl = Acl.builder()
                      .aclId(aclId)
                      .userId(userId)
@@ -365,18 +350,20 @@ public class AclService {
 			}
 		}
 
-		// Build the Acl entity to be inserted; aclId will be assigned by the DB sequence in the custom repository method
-		Acl toInsert = Acl.builder()
-						  .userId(userId)
-						  .unitId(unitId)
-						  .readPrivilege(readPrivilege)
-						  .createPrivilege(createPrivilege)
-						  .modifyPrivilege(modifyPrivilege)
-						  .deletePrivilege(deletePrivilege)
-						  .build();
+		var newId = aclRepository.createNewAclWithNewAclId(userId, unitId, readPrivilege, createPrivilege, modifyPrivilege, deletePrivilege);
 
-		// Delegate to custom repository method which will use nextval(...) and RETURNING to atomically insert and return the Acl
-		Acl saved = aclRepository.insertWithNextAclId(toInsert);
-		return saved;
+		if (newId == null || newId < 1) {
+			log.error("Failed to create new ACL entry for userId: {}, unitId: {}", userId, unitId);
+			throw new VempainAclException("Failed to create new ACL entry");
+		}
+
+		var optionalAcl = aclRepository.findById(newId);
+
+		if (optionalAcl.isEmpty()) {
+			log.error("Created ACL ID {} could not be found after creation for userId: {}, unitId: {}", newId, userId, unitId);
+			throw new VempainAclException("Created ACL entry could not be found after creation");
+		}
+
+		return optionalAcl.get();
 	}
 }
