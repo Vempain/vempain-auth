@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class AclIdService {
 	private final EntityManager entityManager;
 
-	public Acl generateNewAcl(Long userId, Long unitId, boolean create, boolean modify, boolean read, boolean delete) {
+	public Acl generateNewAcl(Long userId, Long unitId, boolean read, boolean create, boolean modify, boolean delete) {
 		var sqlString = """
 				INSERT INTO acl (acl_id, user_id, unit_id, read_privilege, create_privilege, modify_privilege, delete_privilege) 
 							VALUES ((SELECT nextval('acl_acl_id_seq')), :userId, :unitId, :readPriv, :createPriv, :modifyPriv, :deletePriv)
