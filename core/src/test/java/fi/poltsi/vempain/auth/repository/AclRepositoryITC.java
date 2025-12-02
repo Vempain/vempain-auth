@@ -32,7 +32,6 @@ class AclRepositoryITC extends IntegrationTestSetup {
 		nextId = aclRepository.getNextAclId();
 		assertNotNull(nextId);
 		log.info("Next ID: {}", nextId);
-		assertNotNull(nextId);
 	}
 
 	@Test
