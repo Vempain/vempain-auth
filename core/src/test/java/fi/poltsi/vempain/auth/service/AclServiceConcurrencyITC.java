@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AclServiceConcurrencyITC {
 
 	@Container
-	public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
+	public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
 			.withDatabaseName("testdb")
 			.withUsername("testuser")
 			.withPassword("testpass");

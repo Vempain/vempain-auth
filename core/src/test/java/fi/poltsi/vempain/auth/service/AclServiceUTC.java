@@ -80,7 +80,7 @@ class AclServiceUTC {
 
 	@Test
 	void getNextAclIdOk() {
-		when(aclRepository.getNextAvailableAclId()).thenReturn(11L);
+		when(aclRepository.getNextAclId()).thenReturn(11L);
 		Long nextId = aclService.getNextAclId();
 		assertEquals(11L, nextId);
 	}
@@ -472,7 +472,7 @@ class AclServiceUTC {
 	void saveNewAclForObjectOk() {
 		List<Acl>        acls        = TestUTCTools.generateAclList(1L, 10L, false);
 		List<AclRequest> aclRequests = TestUTCTools.generateAclRequestListFromAcl(acls);
-		when(aclRepository.getNextAvailableAclId()).thenReturn(1L);
+		when(aclRepository.getNextAclId()).thenReturn(1L);
 		when(aclRepository.getAclByAclId(1L)).thenReturn(new ArrayList<>());
 
 		for (Acl acl : acls) {
@@ -491,7 +491,7 @@ class AclServiceUTC {
 	@Test
 	void saveNewAclForObjectNegativeAclIdFail() {
 		ArrayList<AclRequest> aclRequests = new ArrayList<>();
-		when(aclRepository.getNextAvailableAclId()).thenReturn(-1L);
+		when(aclRepository.getNextAclId()).thenReturn(-1L);
 
 		try {
 			aclService.saveNewAclForObject(aclRequests);
@@ -506,7 +506,7 @@ class AclServiceUTC {
 
 	@Test
 	void saveNewAclForObjectNullRequestFail() {
-		when(aclRepository.getNextAvailableAclId()).thenReturn(1L);
+		when(aclRepository.getNextAclId()).thenReturn(1L);
 
 		try {
 			aclService.saveNewAclForObject(null);
@@ -523,7 +523,7 @@ class AclServiceUTC {
 	void saveNewAclForObjectRuntimeExceptionFail() {
 		List<Acl>        acls        = TestUTCTools.generateAclList(1L, 1L, false);
 		List<AclRequest> aclRequests = TestUTCTools.generateAclRequestListFromAcl(acls);
-		when(aclRepository.getNextAvailableAclId()).thenReturn(1L);
+		when(aclRepository.getNextAclId()).thenReturn(1L);
 
 		for (var acl : acls) {
 			var optionalUser = Optional.of(TestUTCTools.generateUser(acl.getUserId()));

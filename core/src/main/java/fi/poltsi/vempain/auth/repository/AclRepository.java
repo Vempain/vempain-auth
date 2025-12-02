@@ -14,7 +14,7 @@ import java.util.List;
 
 @Repository
 @Transactional(propagation = Propagation.SUPPORTS)
-public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>, CrudRepository<Acl, Long>, AclRepositoryCustom {
+public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>, CrudRepository<Acl, Long> {
 	@Query("FROM Acl ORDER BY aclId ASC")
 	List<Acl> findAll();
 
@@ -32,9 +32,6 @@ public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>
 	@Modifying
 	void deleteAclsByAclId(long aclId);
 
-	@Query("SELECT CASE WHEN MAX(aclId) IS NULL THEN 1 ELSE (MAX(aclId) + 1) END AS next FROM Acl")
-	long getNextAvailableAclId();
-
 	@Query("FROM Acl WHERE userId IS NOT NULL AND unitId IS NOT NULL")
 	Iterable<Acl> findAllWithUserUnit();
 
@@ -42,7 +39,11 @@ public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>
 				   " HAVING COUNT(*) > 1", nativeQuery = true)
 	List<Long> findAclIdWithDuplicates();
 
-	void deleteById(Long id);
+	void deleteById(long id);
 
 	void deleteAllByUnitId(long unitId);
+
+	@Query(value = "SELECT nextval('acl_acl_id_seq')", nativeQuery = true)
+	Long getNextAclId();
+
 }
