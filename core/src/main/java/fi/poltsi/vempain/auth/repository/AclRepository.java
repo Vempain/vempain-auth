@@ -46,17 +46,4 @@ public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>
 	@Query(value = "SELECT nextval('acl_acl_id_seq')", nativeQuery = true)
 	Long getNextAclId();
 
-	@Modifying
-	@Query(nativeQuery = true, value =
-			"""
-					INSERT INTO acl (acl_id, user_id, unit_id, read_privilege, create_privilege, modify_privilege, delete_privilege) 
-								VALUES ((SELECT nextval('acl_acl_id_seq')), :userId, :unitId, :readPriv, :createPriv, :modifyPriv, :deletePriv)
-								RETURNING id
-					""")
-	Long createNewAclWithNewAclId(@Param(value = "userId") Long userId,
-								  @Param(value = "unitId") Long unitId,
-								  @Param(value = "readPriv") boolean readPriv,
-								  @Param(value = "modifyPriv") boolean modifyPriv,
-								  @Param(value = "createPriv") boolean createPriv,
-								  @Param(value = "deletePriv") boolean deletePriv);
 }
