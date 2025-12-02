@@ -29,6 +29,7 @@ public class AclService {
 	private final AclRepository         aclRepository;
 	private final UserAccountRepository userAccountRepository;
 	private final UnitRepository        unitRepository;
+	private final AclIdService aclIdService;
 
 	public List<Acl> findAll() {
         return aclRepository.findAll();
@@ -350,20 +351,13 @@ public class AclService {
 			}
 		}
 
-		var newId = aclRepository.createNewAclWithNewAclId(userId, unitId, readPrivilege, createPrivilege, modifyPrivilege, deletePrivilege);
+		var newAcl = aclIdService.generateNewAcl(userId, unitId, readPrivilege, createPrivilege, modifyPrivilege, deletePrivilege);
 
-		if (newId == null || newId < 1) {
+		if (newAcl == null) {
 			log.error("Failed to create new ACL entry for userId: {}, unitId: {}", userId, unitId);
 			throw new VempainAclException("Failed to create new ACL entry");
 		}
 
-		var optionalAcl = aclRepository.findById(newId);
-
-		if (optionalAcl.isEmpty()) {
-			log.error("Created ACL ID {} could not be found after creation for userId: {}, unitId: {}", newId, userId, unitId);
-			throw new VempainAclException("Created ACL entry could not be found after creation");
-		}
-
-		return optionalAcl.get();
+		return newAcl;
 	}
 }
