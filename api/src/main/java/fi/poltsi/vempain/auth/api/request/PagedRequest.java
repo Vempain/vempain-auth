@@ -20,7 +20,7 @@ import org.springframework.data.domain.Sort;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Schema(description = "Paged result request")
 public class PagedRequest {
-	@Schema(description = "Login name", example = "admin", requiredMode = Schema.RequiredMode.REQUIRED)
+	@Schema(description = "Page number (0-based)", example = "0", requiredMode = Schema.RequiredMode.REQUIRED)
 	@Min(value = 0)
 	private long page;
 
