@@ -22,11 +22,11 @@ import org.springframework.data.domain.Sort;
 public class PagedRequest {
 	@Schema(description = "Page number (0-based)", example = "0", requiredMode = Schema.RequiredMode.REQUIRED)
 	@Min(value = 0)
-	private long page;
+	private int page;
 
 	@Schema(description = "Size of the page", example = "25", requiredMode = Schema.RequiredMode.REQUIRED)
 	@Min(value = 1)
-	private long size;
+	private int size;
 
 	@Schema(description = "Sort by field", example = "created_at", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
 	@Nullable
