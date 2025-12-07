@@ -29,7 +29,6 @@ public class PagedResponse<T> {
 
 	@Schema(description = "List of items on the current page")
 	@NotNull
-	@Size()
 	private List<T> content;
 
 	@Schema(description = "Current page index (0-based)", example = "0")
