@@ -66,6 +66,7 @@ public class PagedResponse<T> {
 		pr.setTotalPages(totalPages);
 		pr.setFirst(first);
 		pr.setLast(last);
+		pr.setEmpty(content == null || content.isEmpty());
 		return pr;
 	}
 }
