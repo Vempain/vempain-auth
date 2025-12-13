@@ -60,11 +60,14 @@ public class JsonTools {
 	}
 
 	private static String maskValue(String value) {
-		if (value == null || value.length() <= 4) {
+		if (value == null) {
 			return value;
 		}
-
 		int len = value.length();
-		return value.substring(0, 2) + "*" + value.substring(len - 2);
+		if (len <= 4) {
+			// Mask all characters for short values
+			return "*".repeat(len);
+		}
+		return value.substring(0, 2) + "*".repeat(len - 4) + value.substring(len - 2);
 	}
 }
