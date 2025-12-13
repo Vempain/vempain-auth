@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -38,10 +40,15 @@ class JsonToolsUTC {
 
 	@Test
 	void toJsonHandlesComplexStructureAndObscuresEntries() throws Exception {
-		record Complex(String label, String credential, Map<String, String> metadata, List<String> tags) {
+		record Complex(String label, String credential, Instant timeStamp, Map<String, String> metadata, List<String> tags) {
 		}
 
-		var container  = new Complex("demo", "adminPass", Map.of("configSecret", "important", "normalKey", "ok"), List.of("alpha", "beta"));
+		var container = new Complex("demo",
+									"adminPass",
+									Instant.now()
+										   .minus(30, ChronoUnit.HOURS),
+									Map.of("configSecret", "important", "normalKey", "ok"),
+									List.of("alpha", "beta"));
 		var jsonString = JsonTools.toJson(container, List.of("credential", "configSecret"));
 		log.info("Masked Complex JSON: {}", jsonString);
 		JsonNode result = new ObjectMapper().readTree(jsonString);
