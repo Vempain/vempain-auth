@@ -68,6 +68,6 @@ public class JsonTools {
 			// Mask all characters for short values
 			return "*".repeat(len);
 		}
-		return value.substring(0, 2) + "*".repeat(len - 4) + value.substring(len - 2);
+		return value.substring(0, 2) + "*" + value.substring(len - 2);
 	}
 }
