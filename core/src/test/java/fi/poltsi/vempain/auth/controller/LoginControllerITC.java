@@ -1,6 +1,8 @@
 package fi.poltsi.vempain.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fi.poltsi.vempain.auth.api.AccountStatus;
 import fi.poltsi.vempain.auth.api.PrivacyType;
 import fi.poltsi.vempain.auth.api.request.LoginRequest;
@@ -54,6 +56,9 @@ public class LoginControllerITC {
 
 	@BeforeEach
 	void setUp() {
+		objectMapper.registerModule(new JavaTimeModule());
+		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
 		if (userAccountRepository.findByLoginName("testuser1")
 								 .isEmpty()) {
 			// Create related ACL with all permissions set to true

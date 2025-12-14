@@ -2,7 +2,7 @@ package fi.poltsi.vempain.auth.rest;
 
 import fi.poltsi.vempain.auth.api.Constants;
 import fi.poltsi.vempain.auth.api.request.LoginRequest;
-import fi.poltsi.vempain.auth.api.response.JwtResponse;
+import fi.poltsi.vempain.auth.api.response.LoginResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,11 +24,11 @@ public interface LoginAPI {
 	@io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Login credentials", required = true)
 	@ApiResponses(value = {@ApiResponse(responseCode = "200",
 										description = "User authenticated",
-										content = {@Content(array = @ArraySchema(schema = @Schema(implementation = JwtResponse.class)),
+										content = {@Content(array = @ArraySchema(schema = @Schema(implementation = LoginResponse.class)),
 															mediaType = MediaType.APPLICATION_JSON_VALUE)}),
 						   @ApiResponse(responseCode = "400", description = "Invalid request issued", content = @Content),
 						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content),
 						   @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)})
 	@PostMapping(value = Constants.LOGIN_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
-	ResponseEntity<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest);
+	ResponseEntity<LoginResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest);
 }

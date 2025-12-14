@@ -71,7 +71,6 @@ public class WebSecurityConfig {
 				})
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
-				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class)
 		;
 		return http.build();

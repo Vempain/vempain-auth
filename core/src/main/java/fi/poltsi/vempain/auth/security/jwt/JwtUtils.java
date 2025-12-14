@@ -8,6 +8,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.WeakKeyException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -17,25 +18,26 @@ import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.UUID;
 
 @Slf4j
+@RequiredArgsConstructor
 @Component
 public class JwtUtils {
 
+	private final SecretKey secretKey = Jwts.SIG.HS512.key()
+													  .build();
 	@Value("${vempain.app.jwt-expiration-ms}")
 	private       long      jwtExpirationMs;
 	// TODO This needs to be cleaned up as the secret is not used at all for the moment
 	@Value("${vempain.app.jwt-secret}")
 	private       String    jwtSecret;
-	private final SecretKey secretKey = Jwts.SIG.HS512.key().build();
 
-	public String generateJwtToken(Authentication authentication) {
+	public JwtToken generateJwtToken(Authentication authentication) {
 		var vempainUserDetails = (UserDetailsImpl) authentication.getPrincipal();
 		return generateJwtTokenForUser(vempainUserDetails.getUsername(), vempainUserDetails.getLoginName(), vempainUserDetails.getEmail());
 	}
 
-	public String generateJwtTokenForUser(String username, String login, String email) {
+	public JwtToken generateJwtTokenForUser(String username, String login, String email) {
 		if (secretKey == null) {
 			log.error("The JWT signing key is null");
 			return null;
@@ -43,15 +45,20 @@ public class JwtUtils {
 
 		var nowDate = Instant.now();
 		var expDate = nowDate.plus(jwtExpirationMs, ChronoUnit.MILLIS);
-		return Jwts.builder()
-				   .claim("name", username)
-				   .claim("email", email)
-				   .subject(login)
-				   .id(UUID.randomUUID().toString())
-				   .issuedAt(Date.from(nowDate))
-				   .expiration(Date.from(expDate))
-				   .signWith(secretKey)
-				   .compact();
+		var jwtTokenString = Jwts.builder()
+								 .claim("name", username)
+								 .claim("email", email)
+								 .subject(login)
+								 .id(jwtSecret)
+								 .issuedAt(Date.from(nowDate))
+								 .expiration(Date.from(expDate))
+								 .signWith(secretKey)
+								 .compact();
+		return JwtToken.builder()
+					   .tokenString(jwtTokenString)
+					   .issuedAt(nowDate)
+					   .expiresAt(expDate)
+					   .build();
 	}
 
 	private Claims extractAllClaims(String token) {

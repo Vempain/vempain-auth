@@ -1,7 +1,7 @@
 package fi.poltsi.vempain.auth.controller;
 
 import fi.poltsi.vempain.auth.api.request.LoginRequest;
-import fi.poltsi.vempain.auth.api.response.JwtResponse;
+import fi.poltsi.vempain.auth.api.response.LoginResponse;
 import fi.poltsi.vempain.auth.api.response.UnitResponse;
 import fi.poltsi.vempain.auth.rest.LoginAPI;
 import fi.poltsi.vempain.auth.security.jwt.JwtUtils;
@@ -29,7 +29,7 @@ public class LoginController implements LoginAPI {
 	private       JwtUtils              jwtUtils;
 
 	@Override
-	public ResponseEntity<JwtResponse> authenticateUser(LoginRequest loginRequest) {
+	public ResponseEntity<LoginResponse> authenticateUser(LoginRequest loginRequest) {
 		log.info("LoginController::authenticateUser called");
 		Authentication authentication;
 
@@ -57,7 +57,7 @@ public class LoginController implements LoginAPI {
 
 		SecurityContextHolder.getContext()
 							 .setAuthentication(authentication);
-		String jwt = jwtUtils.generateJwtToken(authentication);
+		var jwtToken = jwtUtils.generateJwtToken(authentication);
 
 		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 		var             units       = userDetails.getUnits();
@@ -68,13 +68,14 @@ public class LoginController implements LoginAPI {
 			unitResponses.add(unit.getUnitResponse());
 		}
 
-		return ResponseEntity.ok(JwtResponse.builder()
-											.login(userDetails.getUsername())
-											.nickname(userDetails.getNickName())
-											.email(userDetails.getEmail())
-											.id(userDetails.getId())
-											.units(unitResponses)
-											.token(jwt)
-											.build());
+		return ResponseEntity.ok(LoginResponse.builder()
+											  .login(userDetails.getUsername())
+											  .nickname(userDetails.getNickName())
+											  .email(userDetails.getEmail())
+											  .id(userDetails.getId())
+											  .units(unitResponses)
+											  .expiresAt(jwtToken.getExpiresAt())
+											  .token(jwtToken.getTokenString())
+											  .build());
 	}
 }
