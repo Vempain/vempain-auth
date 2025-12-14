@@ -10,6 +10,7 @@ import fi.poltsi.vempain.auth.entity.Unit;
 import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.repository.UnitRepository;
 import fi.poltsi.vempain.auth.repository.UserAccountRepository;
+import fi.poltsi.vempain.auth.security.jwt.JwtToken;
 import fi.poltsi.vempain.auth.security.jwt.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 
 import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
@@ -81,8 +83,14 @@ class LoginRTC extends IntegrationTestSetup {
 							  .build();
 		userAccountRepository.save(user);
 
+		var jwtToken = JwtToken.builder()
+							   .tokenString("test.jwt.token")
+							   .issuedAt(Instant.now())
+							   .expiresAt(Instant.now()
+												 .plus(10, ChronoUnit.DAYS))
+							   .build();
 		Mockito.when(jwtUtils.generateJwtToken(any()))
-			   .thenReturn("test.jwt.token");
+			   .thenReturn(jwtToken);
 	}
 
 	@Test

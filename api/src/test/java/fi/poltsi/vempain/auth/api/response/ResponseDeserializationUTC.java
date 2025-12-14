@@ -92,7 +92,7 @@ public class ResponseDeserializationUTC {
 				}
 				""";
 
-		JwtResponse jwt = mapper.readValue(json, JwtResponse.class);
+		LoginResponse jwt = mapper.readValue(json, LoginResponse.class);
 
 		assertNotNull(jwt);
 		assertEquals("abc", jwt.getToken());
