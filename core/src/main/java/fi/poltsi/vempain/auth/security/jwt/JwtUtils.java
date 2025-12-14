@@ -45,11 +45,12 @@ public class JwtUtils {
 
 		var nowDate = Instant.now();
 		var expDate = nowDate.plus(jwtExpirationMs, ChronoUnit.MILLIS);
+		var jwtId = jwtSecret + username + login + email;
 		var jwtTokenString = Jwts.builder()
 								 .claim("name", username)
 								 .claim("email", email)
 								 .subject(login)
-								 .id(jwtSecret)
+								 .id(jwtId)
 								 .issuedAt(Date.from(nowDate))
 								 .expiration(Date.from(expDate))
 								 .signWith(secretKey)
