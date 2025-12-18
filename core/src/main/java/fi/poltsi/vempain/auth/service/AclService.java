@@ -52,14 +52,14 @@ public class AclService {
             throw new VempainEntityNotFoundException("ACL not found for deletion", "acl");
         }
 
-        log.info("Deleting all acl with acl ID: {}", aclId);
+		log.debug("Deleting all acl with acl ID: {}", aclId);
         aclRepository.deleteAclsByAclId(aclId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public Acl save(Acl acl) throws VempainAclException {
         verifyAcl(acl.getAclId(), acl.getUserId(), acl.getUnitId(), acl.isCreatePrivilege(), acl.isReadPrivilege(), acl.isModifyPrivilege(), acl.isDeletePrivilege());
-        log.info("Saving ACL: {}", acl);
+		log.debug("Saving ACL: {}", acl);
 
         return aclRepository.save(acl);
     }
@@ -141,7 +141,7 @@ public class AclService {
         List<Acl> oldAcls = findAclByAclId(aclId);
 
         if (!oldAcls.isEmpty()) {
-			log.info("ACL ID {} already exists, deleting old ACLs", aclId);
+			log.debug("ACL ID {} already exists, deleting old ACLs", aclId);
 			try {
 				deleteByAclId(aclId);
 			} catch (VempainEntityNotFoundException e) {
@@ -238,7 +238,7 @@ public class AclService {
         }
 
 		if (userId != null) {
-			log.info("User ID needs to be checked: {}", userId);
+			log.debug("User ID needs to be checked: {}", userId);
 			var optionalUser = userAccountRepository.findById(userId);
 
 			if (optionalUser.isEmpty()) {

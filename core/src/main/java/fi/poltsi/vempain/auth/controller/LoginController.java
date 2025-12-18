@@ -30,7 +30,7 @@ public class LoginController implements LoginAPI {
 
 	@Override
 	public ResponseEntity<LoginResponse> authenticateUser(LoginRequest loginRequest) {
-		log.info("LoginController::authenticateUser called");
+		log.debug("LoginController::authenticateUser called");
 		Authentication authentication;
 
 		try {
@@ -43,7 +43,7 @@ public class LoginController implements LoginAPI {
 		var optionalUser = userService.findByLogin(loginRequest.getLogin());
 
 		if (optionalUser.isEmpty()) {
-			log.info("LoginController::authenticateUser Could not find user: {}", loginRequest.getLogin());
+			log.warn("LoginController::authenticateUser Could not find user: {}", loginRequest.getLogin());
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 
@@ -51,7 +51,7 @@ public class LoginController implements LoginAPI {
 
 		if (user.isLocked()) {
 			// If the user is locked, then we behave like it does not exist
-			log.info("Locked user tried to login: {}", loginRequest.getLogin());
+			log.warn("Locked user tried to login: {}", loginRequest.getLogin());
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 

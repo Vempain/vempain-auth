@@ -27,7 +27,7 @@ public class AclIdService {
 		query.setParameter("modifyPriv", modify);
 		query.setParameter("deletePriv", delete);
 		var newAcl = (Acl) query.getSingleResult();
-		log.info("Generated new Acl: {}", newAcl);
+		log.debug("Generated new Acl: {}", newAcl);
 		return newAcl;
 	}
 }
