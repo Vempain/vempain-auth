@@ -122,7 +122,7 @@ public class UnitService {
 		List<Acl> oldAcls = aclRepository.getAclByAclId(aclId);
 
 		if (!oldAcls.isEmpty()) {
-			log.info("ACL ID {} already exists, deleting old ACLs", aclId);
+			log.debug("ACL ID {} already exists, deleting old ACLs", aclId);
 			aclRepository.deleteAclsByAclId(aclId);
 		}
 
