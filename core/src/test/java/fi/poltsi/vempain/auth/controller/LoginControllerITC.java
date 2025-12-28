@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class LoginControllerITC {
 
 	@Container
-	static  PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
+	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine")
 			.withDatabaseName("testdb")
 			.withUsername("testuser")
 			.withPassword("testpass");

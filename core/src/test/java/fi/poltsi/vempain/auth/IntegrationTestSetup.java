@@ -23,7 +23,7 @@ import java.sql.Statement;
 public abstract class IntegrationTestSetup {
 
 	private static final PostgreSQLContainer<?> POSTGRES =
-			new PostgreSQLContainer<>("postgres:17")
+			new PostgreSQLContainer<>("postgres:18-alpine")
 					.withDatabaseName("vempain_auth_test")
 					.withUsername("test")
 					.withPassword("test");
