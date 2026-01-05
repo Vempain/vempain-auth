@@ -1,9 +1,9 @@
 package fi.poltsi.vempain.auth.tools;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -24,7 +24,7 @@ class JsonToolsUTC {
 		Simple   valid      = new Simple("Alice", 30);
 		JsonNode simpleNode = new ObjectMapper().readTree(JsonTools.toJson(valid));
 		assertEquals("Alice", simpleNode.get("name")
-										.asText());
+										.asString());
 		assertEquals(30, simpleNode.get("age")
 								   .asInt());
 
@@ -33,9 +33,9 @@ class JsonToolsUTC {
 		log.info("Masked JSON: {}", jsonString);
 		JsonNode masked = new ObjectMapper().readTree(jsonString);
 		assertEquals("to*et", masked.get("secret")
-									.asText());
+									.asString());
 		assertEquals("ok", masked.get("visible")
-								 .asText());
+								 .asString());
 	}
 
 	@Test
@@ -54,22 +54,22 @@ class JsonToolsUTC {
 		JsonNode result = new ObjectMapper().readTree(jsonString);
 
 		assertEquals("demo", result.get("label")
-								   .asText());
+								   .asString());
 		assertEquals("ad*ss", result.get("credential")
-									.asText());
+									.asString());
 
 		JsonNode metadata = result.get("metadata");
 		assertEquals("im*nt", metadata.get("configSecret")
-									  .asText());
+									  .asString());
 		assertEquals("ok", metadata.get("normalKey")
-								   .asText());
+								   .asString());
 
 		JsonNode tags = result.get("tags");
 		assertTrue(tags.isArray());
 		assertEquals(2, tags.size());
 		assertEquals("alpha", tags.get(0)
-								  .asText());
+								  .asString());
 		assertEquals("beta", tags.get(1)
-								 .asText());
+								 .asString());
 	}
 }

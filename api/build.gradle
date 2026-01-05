@@ -27,11 +27,14 @@ dependencies {
 	api "com.fasterxml.jackson.core:jackson-annotations:3.0-rc5"
 	api "tools.jackson.core:jackson-databind:${jacksonVersion}"
 	api "org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}"
-	api "org.springframework.boot:spring-boot-starter-web:${springBootVersion}"
+	api "org.springframework.boot:spring-boot-starter-webmvc:${springBootVersion}"
 	implementation "io.swagger.core.v3:swagger-annotations:${swaggerVersion}"
 	// https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
 	implementation "jakarta.validation:jakarta.validation-api:3.1.1"
 	testImplementation "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-security-test:${springBootVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test:${springBootVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa-test:${springBootVersion}"
 	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
 	testImplementation "org.junit.platform:junit-platform-launcher:${junitVersion}"
 }

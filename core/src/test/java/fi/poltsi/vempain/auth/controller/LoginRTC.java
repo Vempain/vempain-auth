@@ -1,6 +1,5 @@
 package fi.poltsi.vempain.auth.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.poltsi.vempain.auth.IntegrationTestSetup;
 import fi.poltsi.vempain.auth.TestApp;
 import fi.poltsi.vempain.auth.api.AccountStatus;
@@ -16,12 +15,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

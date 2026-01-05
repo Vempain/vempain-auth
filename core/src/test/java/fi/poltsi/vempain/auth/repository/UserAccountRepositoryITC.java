@@ -104,6 +104,6 @@ class UserAccountRepositoryITC extends IntegrationTestSetup {
 		assertNotNull(dive.getMessage());
 		log.info("dive.getMessage: {}", dive.getMessage());
 		assertTrue(dive.getMessage()
-					   .contains("not-null property references a null or transient value: fi.poltsi.vempain.auth.entity.UserAccount.nick"));
+					   .contains("not-null property references a null or transient value for entity fi.poltsi.vempain.auth.entity.UserAccount.nick"));
 	}
 }
