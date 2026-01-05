@@ -34,10 +34,9 @@ dependencies {
 	implementation "org.springframework.boot:spring-boot-starter-security:${springBootVersion}"
 	implementation "org.springframework.boot:spring-boot-starter-webmvc:${springBootVersion}"
 	implementation "org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-validation:${springBootVersion}"
 	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
 	implementation "io.swagger.core.v3:swagger-annotations:${swaggerVersion}"
-	// https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
-	implementation "jakarta.annotation:jakarta.annotation-api:3.0.0"
 	// https://mvnrepository.com/artifact/org.postgresql/postgresql
 	implementation "org.postgresql:postgresql:42.7.8"
 	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
@@ -50,10 +49,10 @@ dependencies {
 	testImplementation "org.springframework.boot:spring-boot-starter-security-test:${springBootVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test:${springBootVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa-test:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-validation-test:${springBootVersion}"
 	testImplementation "org.testcontainers:testcontainers-junit-jupiter:${testContainersVersion}"
 	testImplementation "org.testcontainers:testcontainers-postgresql:${testContainersVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-flyway:${springBootVersion}"
-
 	// https://mvnrepository.com/artifact/org.springframework.security/spring-security-test
 	testImplementation "org.springframework.security:spring-security-test:7.0.2"
 	// https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter
@@ -62,7 +61,6 @@ dependencies {
 	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
 	runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
 	runtimeOnly "org.flywaydb:flyway-database-postgresql:${flywayVersion}"
-	// Ensure the JUnit Platform launcher is on the runtime classpath (required by Gradle 8/9)
 }
 
 test {
