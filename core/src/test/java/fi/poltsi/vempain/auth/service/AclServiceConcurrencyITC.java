@@ -6,9 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AclServiceConcurrencyITC {
 
 	@Container
-	public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine")
+	public static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine")
 			.withDatabaseName("testdb")
 			.withUsername("testuser")
 			.withPassword("testpass");

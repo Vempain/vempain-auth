@@ -1,22 +1,18 @@
 package fi.poltsi.vempain.auth.tools;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.experimental.UtilityClass;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 
 import java.util.List;
+import java.util.Map;
 
 @UtilityClass
 public class JsonTools {
-	private static final ObjectMapper MAPPER = new ObjectMapper()
-			.registerModule(new JavaTimeModule())
-			.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-			.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 
 	public static String toJson(Object source) {
 		return toJson(source, List.of());
@@ -40,19 +36,40 @@ public class JsonTools {
 		}
 		if (node.isObject()) {
 			ObjectNode objectNode = (ObjectNode) node;
-			objectNode.fieldNames()
-					  .forEachRemaining(fieldName -> {
-						  JsonNode child = objectNode.get(fieldName);
-						  if (targetField.equals(fieldName) && !child.isNull()) {
-							  objectNode.set(fieldName, maskedNode(child));
-						  }
-						  maskFields(child, targetField);
-					  });
+			Map<String, Object> asMap = MAPPER.convertValue(objectNode, new TypeReference<>() {
+			});
+			maskMap(asMap, targetField);
+			ObjectNode replaced = MAPPER.valueToTree(asMap);
+			objectNode.removeAll();
+			objectNode.setAll(replaced);
 		} else if (node.isArray()) {
 			for (JsonNode child : node) {
 				maskFields(child, targetField);
 			}
 		}
+	}
+
+	private static void maskMap(Map<String, Object> map, String targetField) {
+		map.replaceAll((key, value) -> {
+			if (value == null) {
+				return null;
+			}
+			if (targetField.equals(key)) {
+				return maskValue(value.toString());
+			}
+			if (value instanceof Map<?, ?> nested) {
+				//noinspection unchecked
+				maskMap((Map<String, Object>) nested, targetField);
+			} else if (value instanceof List<?> list) {
+				for (Object item : list) {
+					if (item instanceof Map<?, ?> nestedMap) {
+						//noinspection unchecked
+						maskMap((Map<String, Object>) nestedMap, targetField);
+					}
+				}
+			}
+			return value;
+		});
 	}
 
 	private static JsonNode maskedNode(JsonNode original) {
@@ -61,7 +78,7 @@ public class JsonTools {
 		}
 		String value  = original.isTextual() ? original.textValue() : original.asText();
 		String masked = maskValue(value);
-		return TextNode.valueOf(masked);
+		return StringNode.valueOf(masked);
 	}
 
 	private static String maskValue(String value) {

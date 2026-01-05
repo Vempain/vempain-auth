@@ -32,11 +32,10 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	implementation project(':api')
 	implementation "org.springframework.boot:spring-boot-starter-security:${springBootVersion}"
-	implementation "org.springframework.boot:spring-boot-starter-web:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-webmvc:${springBootVersion}"
 	implementation "org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}"
 	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
 	implementation "io.swagger.core.v3:swagger-annotations:${swaggerVersion}"
-	implementation "tools.jackson.datatype:jackson-datatype-jsr310:3.0.0-rc2"
 	// https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
 	implementation "jakarta.annotation:jakarta.annotation-api:3.0.0"
 	// https://mvnrepository.com/artifact/org.postgresql/postgresql
@@ -48,9 +47,13 @@ dependencies {
 	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
 	testImplementation "org.junit.platform:junit-platform-launcher:${junitVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-security-test:${springBootVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test:${springBootVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa-test:${springBootVersion}"
 	testImplementation "org.testcontainers:testcontainers-junit-jupiter:${testContainersVersion}"
 	testImplementation "org.testcontainers:testcontainers-postgresql:${testContainersVersion}"
-	testImplementation "org.flywaydb:flyway-core:${flywayVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-flyway:${springBootVersion}"
+
 	// https://mvnrepository.com/artifact/org.springframework.security/spring-security-test
 	testImplementation "org.springframework.security:spring-security-test:7.0.2"
 	// https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter

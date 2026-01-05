@@ -1,12 +1,10 @@
 package fi.poltsi.vempain.auth.api.response;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fi.poltsi.vempain.auth.api.AccountStatus;
 import fi.poltsi.vempain.auth.api.PrivacyType;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ResponseDeserializationUTC {
 
 	@Test
-	void unitResponseDeserializes() throws Exception {
+	void unitResponseDeserializes() {
 		ObjectMapper mapper = new ObjectMapper();
 		String json = """
 				{"id":10,"name":"users","description":"Normal users"}
@@ -35,10 +33,8 @@ public class ResponseDeserializationUTC {
 	}
 
 	@Test
-	void userResponseDeserializes() throws Exception {
+	void userResponseDeserializes() {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new JavaTimeModule());
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
 		String birthday = "2000-01-01T00:00:00Z";
 		String json = """
@@ -74,10 +70,8 @@ public class ResponseDeserializationUTC {
 	}
 
 	@Test
-	void jwtResponseWithUnitsDeserializes() throws Exception {
+	void jwtResponseWithUnitsDeserializes() {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new JavaTimeModule());
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
 		String json = """
 				{
@@ -104,14 +98,13 @@ public class ResponseDeserializationUTC {
 		assertEquals(1, jwt.getUnits()
 						   .size());
 		UnitResponse unit = jwt.getUnits()
-							.get(0);
+							   .getFirst();
 		assertEquals("users", unit.getName());
 	}
 
 	@Test
-	void pagedResponseDeserializesWithSnakeCase() throws Exception {
+	void pagedResponseDeserializesWithSnakeCase() {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
 		String json = """
 				{
@@ -129,7 +122,8 @@ public class ResponseDeserializationUTC {
 				}
 				""";
 
-		PagedResponse<UnitResponse> pagedResponse = mapper.readValue(json, new TypeReference<PagedResponse<UnitResponse>>() {});
+		PagedResponse<UnitResponse> pagedResponse = mapper.readValue(json, new TypeReference<>() {
+		});
 
 		assertNotNull(pagedResponse);
 		assertNotNull(pagedResponse.getContent());
@@ -143,7 +137,8 @@ public class ResponseDeserializationUTC {
 		assertFalse(pagedResponse.isEmpty());
 
 		// Verify generic type handling - check content items
-		UnitResponse firstUnit = pagedResponse.getContent().get(0);
+		UnitResponse firstUnit = pagedResponse.getContent()
+											  .getFirst();
 		assertEquals(10L, firstUnit.getId());
 		assertEquals("users", firstUnit.getName());
 		assertEquals("Normal users", firstUnit.getDescription());
@@ -154,9 +149,8 @@ public class ResponseDeserializationUTC {
 	}
 
 	@Test
-	void pagedResponseWithEmptyContentDeserializes() throws Exception {
+	void pagedResponseWithEmptyContentDeserializes() {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
 		String json = """
 				{
@@ -171,7 +165,8 @@ public class ResponseDeserializationUTC {
 				}
 				""";
 
-		PagedResponse<UnitResponse> pagedResponse = mapper.readValue(json, new TypeReference<PagedResponse<UnitResponse>>() {});
+		PagedResponse<UnitResponse> pagedResponse = mapper.readValue(json, new TypeReference<>() {
+		});
 
 		assertNotNull(pagedResponse);
 		assertNotNull(pagedResponse.getContent());
@@ -215,14 +210,14 @@ public class ResponseDeserializationUTC {
 
 		// Verify content is accessible
 		assertEquals(1, pagedResponse.getContent().size());
-		assertEquals("users", pagedResponse.getContent().get(0).getName());
+		assertEquals("users", pagedResponse.getContent()
+										   .getFirst()
+										   .getName());
 	}
 
 	@Test
-	void pagedResponseGenericTypeHandlingWithUserResponse() throws Exception {
+	void pagedResponseGenericTypeHandlingWithUserResponse() {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new JavaTimeModule());
-		mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
 		String birthday = "2000-01-01T00:00:00Z";
 		String json = """
@@ -252,12 +247,14 @@ public class ResponseDeserializationUTC {
 				}
 				""".formatted(birthday);
 
-		PagedResponse<UserResponse> pagedResponse = mapper.readValue(json, new TypeReference<PagedResponse<UserResponse>>() {});
+		PagedResponse<UserResponse> pagedResponse = mapper.readValue(json, new TypeReference<>() {
+		});
 
 		assertNotNull(pagedResponse);
 		assertEquals(1, pagedResponse.getContent().size());
-		
-		UserResponse user = pagedResponse.getContent().get(0);
+
+		UserResponse user = pagedResponse.getContent()
+										 .getFirst();
 		assertEquals("Test User", user.getName());
 		assertEquals("testnick", user.getNick());
 		assertEquals("testlogin", user.getLoginName());

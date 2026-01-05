@@ -1,7 +1,5 @@
 package fi.poltsi.vempain.auth.tools;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fi.poltsi.vempain.auth.api.request.AclRequest;
 import fi.poltsi.vempain.auth.api.response.AclResponse;
 import fi.poltsi.vempain.auth.entity.Acl;
@@ -10,11 +8,10 @@ import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.entity.UserUnit;
 import fi.poltsi.vempain.auth.entity.UserUnitId;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.fail;
 
 @Slf4j
 public class TestUTCTools {
@@ -146,12 +143,6 @@ public class TestUTCTools {
 	// Generic
 	public static <T> T deepCopy(T original, Class<T> classType) {
 		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.findAndRegisterModules();
-		try {
-			return objectMapper.readValue(objectMapper.writeValueAsString(original), classType);
-		} catch (JsonProcessingException e) {
-			fail("Failed to deep copy FormComponent: " + e.getMessage());
-			return null;
-		}
+		return objectMapper.readValue(objectMapper.writeValueAsString(original), classType);
 	}
 }

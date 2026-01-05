@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -22,8 +22,8 @@ import java.sql.Statement;
 @ActiveProfiles("test")
 public abstract class IntegrationTestSetup {
 
-	private static final PostgreSQLContainer<?> POSTGRES =
-			new PostgreSQLContainer<>("postgres:18-alpine")
+	private static final PostgreSQLContainer POSTGRES =
+			new PostgreSQLContainer("postgres:18-alpine")
 					.withDatabaseName("vempain_auth_test")
 					.withUsername("test")
 					.withPassword("test");

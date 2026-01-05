@@ -1,8 +1,5 @@
 package fi.poltsi.vempain.auth.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fi.poltsi.vempain.auth.api.AccountStatus;
 import fi.poltsi.vempain.auth.api.PrivacyType;
 import fi.poltsi.vempain.auth.api.request.LoginRequest;
@@ -13,14 +10,15 @@ import fi.poltsi.vempain.auth.tools.AuthTools;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 
@@ -33,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class LoginControllerITC {
 
 	@Container
-	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine")
+	static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine")
 			.withDatabaseName("testdb")
 			.withUsername("testuser")
 			.withPassword("testpass");
@@ -56,9 +54,6 @@ public class LoginControllerITC {
 
 	@BeforeEach
 	void setUp() {
-		objectMapper.registerModule(new JavaTimeModule());
-		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-
 		if (userAccountRepository.findByLoginName("testuser1")
 								 .isEmpty()) {
 			// Create related ACL with all permissions set to true
