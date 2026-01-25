@@ -31,7 +31,7 @@ public abstract class AbstractVempainEntity implements Serializable {
 	@Column(name = "id")
 	protected Long    id;
 	@Basic
-	@Column(name = "acl_id", unique = true)
+	@Column(name = "acl_id", unique = true, nullable = false)
 	protected long    aclId;
 	@Basic
 	@Column(name = "locked", nullable = false)

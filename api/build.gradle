@@ -23,7 +23,6 @@ jar {
 }
 
 dependencies {
-	// https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations
 	api "org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}"
 	api "org.springframework.boot:spring-boot-starter-webmvc:${springBootVersion}"
 	implementation "io.swagger.core.v3:swagger-annotations:${swaggerVersion}"
