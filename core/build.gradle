@@ -14,18 +14,18 @@ java {
 	}
 }
 
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+jar {
+	archiveFileName = "vempain-auth-core-${version}.jar"
 }
 
 repositories {
 	mavenCentral()
 }
 
-jar {
-	archiveFileName = "vempain-auth-core-${version}.jar"
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
 }
 
 dependencies {
@@ -47,7 +47,7 @@ dependencies {
 	testImplementation "org.springframework.boot:spring-boot-starter-security-test:${springBootVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test:${springBootVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa-test:${springBootVersion}"
-	implementation "org.springframework.boot:spring-boot-starter-validation-test:${springBootVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-validation-test:${springBootVersion}"
 	testImplementation "org.testcontainers:testcontainers-junit-jupiter:${testContainersVersion}"
 	testImplementation "org.testcontainers:testcontainers-postgresql:${testContainersVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-flyway:${springBootVersion}"
