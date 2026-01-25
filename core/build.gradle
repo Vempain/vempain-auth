@@ -51,7 +51,6 @@ dependencies {
 	testImplementation "org.testcontainers:testcontainers-junit-jupiter:${testContainersVersion}"
 	testImplementation "org.testcontainers:testcontainers-postgresql:${testContainersVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-flyway:${springBootVersion}"
-	// https://mvnrepository.com/artifact/org.springframework.security/spring-security-test
 	testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
