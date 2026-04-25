@@ -75,6 +75,8 @@ public class WebSecurityConfig {
 								.requestMatchers("/v3/api-docs/**")
 								.permitAll()
 								.requestMatchers("/actuator/**")
+								.permitAll()
+								.requestMatchers("/api/test/**")
 								.permitAll();
 					} else {
 						auth
@@ -87,8 +89,6 @@ public class WebSecurityConfig {
 					}
 
 					auth
-							.requestMatchers("/api/test/**") // This is only available in development environment
-							.permitAll()
 							.anyRequest()
 							.authenticated();
 				})
