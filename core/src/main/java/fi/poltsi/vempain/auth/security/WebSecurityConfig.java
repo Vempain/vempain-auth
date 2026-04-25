@@ -1,12 +1,17 @@
 package fi.poltsi.vempain.auth.security;
 
+import fi.poltsi.vempain.auth.security.jwt.AuthEntryPointJwt;
 import fi.poltsi.vempain.auth.security.jwt.AuthTokenFilter;
 import fi.poltsi.vempain.auth.service.UserDetailsServiceImpl;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -35,6 +40,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @RequiredArgsConstructor
 public class WebSecurityConfig {
 	private final UserDetailsServiceImpl userDetailsServiceImpl;
+	private final AuthEntryPointJwt authEntryPointJwt;
+	private final Environment       environment;
 
 	@Value("${vempain.cors.allowed-origins}")
 	private List<String> allowedOrigins;
@@ -45,30 +52,50 @@ public class WebSecurityConfig {
 
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		var isLocalProfileActive = environment.acceptsProfiles(Profiles.of("local"));
+
 		http
 				.csrf(AbstractHttpConfigurer::disable)
 				.cors(withDefaults())
 				.authorizeHttpRequests(auth -> {
 					auth
+							.dispatcherTypeMatchers(DispatcherType.ERROR)
+							.permitAll()
+							.requestMatchers("/error")
+							.permitAll()
 							.requestMatchers("/login")
 							.permitAll()
-							.requestMatchers("/", "/index.html")
-							.permitAll()
-							.requestMatchers("/favicon.ico")
-							.permitAll()
-							.requestMatchers("/static/**")
-							.permitAll()
-							.requestMatchers("/img/**")
-							.permitAll()
-							.requestMatchers("/actuator/**")
-							.permitAll()
-							.requestMatchers("/v3/api-docs/**")
-							.permitAll()
+							.requestMatchers("/actuator/health", "/actuator/health/**")
+							.permitAll();
+
+					if (isLocalProfileActive) {
+						auth
+								.requestMatchers("/swagger-ui.html", "/swagger-ui/**")
+								.permitAll()
+								.requestMatchers("/v3/api-docs/**")
+								.permitAll()
+								.requestMatchers("/actuator/**")
+								.permitAll();
+					} else {
+						auth
+								.requestMatchers("/swagger-ui.html", "/swagger-ui/**")
+								.denyAll()
+								.requestMatchers("/v3/api-docs/**")
+								.denyAll()
+								.requestMatchers("/actuator/**")
+								.denyAll();
+					}
+
+					auth
 							.requestMatchers("/api/test/**") // This is only available in development environment
 							.permitAll()
 							.anyRequest()
 							.authenticated();
 				})
+				.exceptionHandling(exception -> exception
+						.authenticationEntryPoint(authEntryPointJwt)
+						.accessDeniedHandler((request, response, accessDeniedException) -> response.sendError(HttpServletResponse.SC_FORBIDDEN,
+						                                                                                      "Error: Forbidden")))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class)
