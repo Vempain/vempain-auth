@@ -1,153 +1,18 @@
-name: Build, test and upload artifact to GitHub Packages
+name: CI
 
 on:
   pull_request:
     branches:
       - main
   push:
-    branches:
-      - main
-    # Publish semver tags as releases.
+    branches: [ main ]
     tags: [ 'v*.*.*' ]
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
-  test:
-    name: Run all tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-
-      - name: Set up Java temurin 25
-        uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-
-      - name: Build with Gradle
-        run: ./gradlew clean test
-
-  publish:
-    name: Package and publish to GitHub Maven
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-
-      - name: Set up Java temurin 25
-        uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-
-      - name: Get main and base version
-        id: basemain
-        shell: bash
-        run: |
-          baseVersion=$(cat VERSION)
-          mainVersion=$(echo ${baseVersion} | cut -d '.' -f 1)
-          echo "baseVersion=${baseVersion}" >> $GITHUB_OUTPUT
-          echo "mainVersion=${mainVersion}" >> $GITHUB_OUTPUT
-
-      - name: Generate new version
-        id: newVer
-        shell: bash
-        run: |
-          git fetch --tags origin
-          currentVersion=$(git tag --list --sort=-version:refname "${baseVersion}.*" | head -n 1 || "${baseVersion}.0")
-
-          if [ -z "${currentVersion}" ]; then
-            newVersion="${baseVersion}.0"
-          else
-            runningNumber=$(echo ${currentVersion} | cut -f 3 -d '.')
-            newVersion="${baseVersion}.$((${runningNumber} + 1))"
-          fi
-          echo "The new version is: ${newVersion}"
-          echo "The generated new version is: ${newVersion}"
-          echo "newVersion=${newVersion}" >> $GITHUB_OUTPUT
-        env:
-          baseVersion: ${{ steps.basemain.outputs.baseVersion }}
-
-      - name: Configure Maven for GitHub Packages
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
-          <settings>
-            <servers>
-              <server>
-                <id>github</id>
-                <username>${{ github.actor }}</username>
-                <password>${{ secrets.VEMPAIN_ACTION_TOKEN }}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-
-      - name: Publish package
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
-        run: ./gradlew publish -PreleaseVersion=${targetVersion} --no-daemon
-        env:
-          GITHUB_TOKEN: ${{ secrets.VEMPAIN_ACTION_TOKEN }}
-          targetVersion: ${{ steps.newVer.outputs.newVersion }}
-
-      - name: Create tag
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
-        uses: actions/github-script@v9
-        with:
-          github-token: ${{ secrets.VEMPAIN_ACTION_TOKEN }}
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/${{ steps.newVer.outputs.newVersion }}',
-              sha: context.sha
-            })
-
-      - name: Create GitHub Release
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
-        uses: actions/github-script@v9
-        with:
-          github-token: ${{ secrets.VEMPAIN_ACTION_TOKEN }}
-          script: |
-            const tag = '${{ steps.newVer.outputs.newVersion }}';
-
-            // Check if release already exists
-            let releaseExists = false;
-            try {
-              await github.rest.repos.getReleaseByTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag: tag
-              });
-              releaseExists = true;
-              core.info(`Release for ${tag} already exists, skipping creation`);
-            } catch (error) {
-              if (error.status !== 404) {
-                throw error;
-              }
-            }
-
-            // Create release only if it doesn't exist
-            if (!releaseExists) {
-              const resp = await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: tag,
-                name: `Release ${tag}`,
-                body: [
-                  `Automated release for ${tag}`,
-                  '',
-                  'Artifact tags pushed:',
-                  '- latest',
-                  `- ${{ steps.basemain.outputs.mainVersion }}`,
-                  `- ${{ steps.basemain.outputs.baseVersion }}`,
-                  `- ${tag}`
-                ].join('\n'),
-                draft: false,
-                prerelease: false,
-                generate_release_notes: true
-              });
-              core.info(`Release created: ${resp.data.html_url}`);
-            }
+  ci:
+    uses: Vempain/vempain-workflows/.github/workflows/spring-boot-library.yaml@main
+    secrets: inherit
