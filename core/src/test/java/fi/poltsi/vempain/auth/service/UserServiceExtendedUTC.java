@@ -68,6 +68,7 @@ class UserServiceExtendedUTC {
 	@Test
 	void findUserResponseByIdFoundOk() {
 		var user = buildFullUser(1L, 1L);
+		// Long.valueOf() is needed to stub findById(Long) from CrudRepository, not findById(long) from UserAccountRepository
 		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
 		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
 
