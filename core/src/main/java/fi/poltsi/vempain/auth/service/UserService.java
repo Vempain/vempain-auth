@@ -75,6 +75,7 @@ public class UserService {
 							  .birthday(userRequest.getBirthday())
 							  .description(userRequest.getDescription())
 							  .password(passwordHash)
+							  .status(fi.poltsi.vempain.auth.api.AccountStatus.REGISTERED)
 							  .aclId(aclId)
 							  .creator(AuthTools.getCurrentUserId())
 							  .created(Instant.now())

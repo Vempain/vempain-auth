@@ -5,7 +5,6 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
-import tools.jackson.databind.node.StringNode;
 
 import java.util.List;
 import java.util.Map;
@@ -72,14 +71,6 @@ public class JsonTools {
 		});
 	}
 
-	private static JsonNode maskedNode(JsonNode original) {
-		if (original.isNull()) {
-			return original;
-		}
-		String value  = original.isTextual() ? original.textValue() : original.asText();
-		String masked = maskValue(value);
-		return StringNode.valueOf(masked);
-	}
 
 	private static String maskValue(String value) {
 		if (value == null) {

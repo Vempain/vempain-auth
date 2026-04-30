@@ -7,6 +7,7 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import io.jsonwebtoken.security.WeakKeyException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +87,8 @@ public class JwtUtils {
 			log.error("JWT token is unsupported: {}", e.getMessage());
 		} catch (IllegalArgumentException e) {
 			log.error("JWT claims string is empty: {}", e.getMessage());
+		} catch (SignatureException e) {
+			log.error("JWT signature validation failed: {}", e.getMessage());
 		} catch (WeakKeyException e) {
 			log.error("Weak key detected: {}", e.getMessage());
 		}
