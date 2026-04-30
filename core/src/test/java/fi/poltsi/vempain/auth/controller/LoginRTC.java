@@ -108,4 +108,74 @@ class LoginRTC extends IntegrationTestSetup {
 			   .andExpect(jsonPath("$.token", notNullValue()))
 			   .andExpect(jsonPath("$.login").value("testuser"));
 	}
+
+	@Test
+	void loginLockedUserReturns404() throws Exception {
+		// Create a locked user
+		var lockedUnitAclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
+		Unit lockedUnit = Unit.builder()
+							  .name("LOCKED_USER_UNIT")
+							  .creator(ADMIN_ID)
+							  .created(Instant.now())
+							  .aclId(lockedUnitAclId)
+							  .build();
+		lockedUnit = unitRepository.save(lockedUnit);
+
+		var lockedUserAclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
+		var lockedUser = UserAccount.builder()
+								   .loginName("lockeduser")
+								   .nick("Locked")
+								   .email("locked@example.com")
+								   .password(passwordEncoder.encode("S3cure-Pass!"))
+								   .birthday(Instant.now().minus(100000, ChronoUnit.DAYS))
+								   .name("lockeduser")
+								   .privacyType(PrivacyType.PUBLIC)
+								   .status(AccountStatus.ACTIVE)
+								   .locked(true)   // account is locked
+								   .aclId(lockedUserAclId)
+								   .units(Set.of(lockedUnit))
+								   .creator(ADMIN_ID)
+								   .created(Instant.now())
+								   .build();
+		userAccountRepository.save(lockedUser);
+
+		var req = LoginRequest.builder()
+							  .login("lockeduser")
+							  .password("S3cure-Pass!")
+							  .build();
+
+		mockMvc.perform(
+					   post("/login")
+							   .contentType(MediaType.APPLICATION_JSON)
+							   .content(objectMapper.writeValueAsString(req)))
+			   .andExpect(status().isNotFound());
+	}
+
+	@Test
+	void loginWrongPasswordReturns404() throws Exception {
+		var req = LoginRequest.builder()
+							  .login("testuser")
+							  .password("WrongPassword!")
+							  .build();
+
+		mockMvc.perform(
+					   post("/login")
+							   .contentType(MediaType.APPLICATION_JSON)
+							   .content(objectMapper.writeValueAsString(req)))
+			   .andExpect(status().isNotFound());
+	}
+
+	@Test
+	void loginUnknownUserReturns404() throws Exception {
+		var req = LoginRequest.builder()
+							  .login("nosuchuser")
+							  .password("AnyPass1!")
+							  .build();
+
+		mockMvc.perform(
+					   post("/login")
+							   .contentType(MediaType.APPLICATION_JSON)
+							   .content(objectMapper.writeValueAsString(req)))
+			   .andExpect(status().isNotFound());
+	}
 }
