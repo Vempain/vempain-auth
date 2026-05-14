@@ -20,7 +20,7 @@ class PagedResponseJTC {
 	private ObjectMapper mapper;
 
 	@Test
-	void pagedResponseSerializesPaginationMetadataWithSnakeCaseKeys() throws Exception {
+	void pagedResponseSerializesPaginationMetadataWithSnakeCaseKeys() {
 		PagedResponse<String> response = PagedResponse.of(
 				List.of("one", "two"),
 				3,
@@ -61,7 +61,7 @@ class PagedResponseJTC {
 	}
 
 	@Test
-	void pagedResponseSerializesEmptyContentAsEmptyTrue() throws Exception {
+	void pagedResponseSerializesEmptyContentAsEmptyTrue() {
 		PagedResponse<String> response = PagedResponse.of(
 				List.of(),
 				0,
@@ -84,7 +84,7 @@ class PagedResponseJTC {
 	}
 
 	@Test
-	void pagedResponseDeserializesSnakeCaseKeys() throws Exception {
+	void pagedResponseDeserializesSnakeCaseKeys() {
 		String json = """
 				{
 				  "content": ["one"],
@@ -111,7 +111,7 @@ class PagedResponseJTC {
 	}
 
 	@Test
-	void pagedResponseDeserializesSnakeCaseKeysWithFactoryCompatibleValues() throws Exception {
+	void pagedResponseDeserializesSnakeCaseKeysWithFactoryCompatibleValues() {
 		String json = """
 				{
 				  "content": ["legacy"],
