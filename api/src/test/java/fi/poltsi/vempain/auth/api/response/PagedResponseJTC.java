@@ -1,9 +1,11 @@
 package fi.poltsi.vempain.auth.api.response;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
@@ -11,10 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@JsonTest
 class PagedResponseJTC {
 
-	private final ObjectMapper mapper = JsonMapper.builder()
-	                                              .build();
+	@Autowired
+	private ObjectMapper mapper;
 
 	@Test
 	void pagedResponseSerializesPaginationMetadataWithSnakeCaseKeys() throws Exception {
@@ -130,5 +133,8 @@ class PagedResponseJTC {
 		assertTrue(response.isFirst());
 		assertTrue(response.isLast());
 	}
-}
 
+	@SpringBootConfiguration
+	public static class TestConfig {
+	}
+}
