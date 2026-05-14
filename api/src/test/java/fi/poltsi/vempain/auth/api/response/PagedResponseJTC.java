@@ -134,6 +134,7 @@ class PagedResponseJTC {
 		assertTrue(response.isLast());
 	}
 
+	// Provides the minimal Spring Boot configuration required for @JsonTest in the api module.
 	@SpringBootConfiguration
 	public static class TestConfig {
 	}
