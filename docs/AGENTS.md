@@ -51,6 +51,10 @@
 - Formatting is tab-indented for Java (`.editorconfig`); avoid reformatting unrelated code.
 - DTOs commonly use Lombok builders and snake_case JSON mappings; see `UserResponse`, `UnitResponse`, and `ResponseDeserializationUTC.java` for the
   serialization contract.
+- JSON contract is mandatory snake_case only (`total_pages`, `total_elements`, etc.); never introduce camelCase JSON field names in request/response DTOs,
+  samples, or tests.
+- For Jackson usage, prefer v3 `tools.jackson.databind.*` naming/mapper APIs and keep non-`tools.jackson` annotations only when no `tools.jackson`
+  replacement is available in the active dependency set.
 - REST endpoints are defined via constants in `api/.../Constants.java`; e.g. login uses `Constants.LOGIN_PATH` (`/login`).
 - Security config expects host applications/tests to provide properties such as `vempain.cors.allowed-origins`, `vempain.cors.max-age`,
   `vempain.cors.cors-pattern`, `vempain.app.jwt-secret`, and `vempain.app.jwt-expiration-ms`.
