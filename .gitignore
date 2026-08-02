@@ -27,3 +27,4 @@ out/
 
 # Ignore any log files
 *.log
+.junie
