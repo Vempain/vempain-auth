@@ -118,6 +118,14 @@ public class UserService {
 		user.setPublic(userRequest.isPrivateUser());
 		user.setStreet(userRequest.getStreet());
 
+		if (userRequest.getPassword() != null && !userRequest.getPassword()
+		                                                     .isBlank()) {
+			if (!AuthTools.passwordCheck(userRequest.getPassword())) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is not valid");
+			}
+			user.setPassword(AuthTools.passwordHash(userRequest.getPassword()));
+		}
+
 		user.setModifier(AuthTools.getCurrentUserId());
 		user.setModified(Instant.now());
 
