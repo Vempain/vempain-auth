@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -89,6 +90,15 @@ public class WebSecurityConfig {
 					}
 
 					auth
+							.requestMatchers(HttpMethod.GET, "/files/**", "/file-groups/**", "/tags/**")
+							.hasRole("ADMIN")
+							.requestMatchers(HttpMethod.POST, "/scan-files/**", "/publish/**", "/data-publish/**",
+							                 "/file-groups/**", "/tags/**", "/location/guard/**")
+							.hasRole("ADMIN")
+							.requestMatchers(HttpMethod.PUT, "/file-groups/**", "/tags/**", "/location/guard/**")
+							.hasRole("ADMIN")
+							.requestMatchers(HttpMethod.DELETE, "/files/**", "/file-groups/**", "/tags/**", "/location/guard/**")
+							.hasRole("ADMIN")
 							.anyRequest()
 							.authenticated();
 				})
