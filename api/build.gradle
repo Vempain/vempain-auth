@@ -1,16 +1,16 @@
 plugins {
 	id 'java-library'
 	id 'maven-publish'
-	id "io.freefair.lombok" version "${ioFreeFairLombok}"
+	alias libs.plugins.freefair.lombok
 	id "jacoco"
 }
 
 group = 'fi.poltsi.vempain'
-version = project.hasProperty("releaseVersion") ? project.releaseVersion : '0.0.1-SNAPSHOT'
+version = project.hasProperty("releaseVersion") ? project.releaseVersion : libs.versions.project.get()
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(javaVersion.toInteger())
+		languageVersion = JavaLanguageVersion.of(libs.versions.java.get().toInteger())
 	}
 }
 
@@ -29,17 +29,17 @@ configurations {
 }
 
 dependencies {
-	api "org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}"
-	api "org.springframework.boot:spring-boot-starter-webmvc:${springBootVersion}"
-	implementation "io.swagger.core.v3:swagger-annotations:${swaggerVersion}"
-	implementation "org.springframework.boot:spring-boot-starter-validation:${springBootVersion}"
-	implementation "org.springframework.boot:spring-boot-starter-jackson:${springBootVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-security-test:${springBootVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test:${springBootVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa-test:${springBootVersion}"
-	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
-	testImplementation "org.junit.platform:junit-platform-launcher:${junitVersion}"
+	api libs.spring.boot.starter.data.jpa
+	api libs.spring.boot.starter.webmvc
+	implementation libs.swagger.annotations
+	implementation libs.spring.boot.starter.validation
+	implementation libs.spring.boot.starter.jackson
+	testImplementation libs.spring.boot.starter.test
+	testImplementation libs.spring.boot.starter.security.test
+	testImplementation libs.spring.boot.starter.webmvc.test
+	testImplementation libs.spring.boot.starter.data.jpa.test
+	testImplementation libs.junit.jupiter
+	testImplementation libs.junit.platform.launcher
 }
 
 publishing {
@@ -62,7 +62,7 @@ publishing {
 }
 
 jacoco {
-	toolVersion = "0.8.13"
+	toolVersion = libs.versions.jacoco.get()
 }
 
 tasks.named('test') {

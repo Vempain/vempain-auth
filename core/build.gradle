@@ -1,17 +1,17 @@
 plugins {
 	id 'java-library'
 	id 'maven-publish'
-	id "io.freefair.lombok" version "${ioFreeFairLombok}"
-	id 'io.spring.dependency-management' version '1.1.7'
+	alias libs.plugins.freefair.lombok
+	alias libs.plugins.spring.dependency.management
 	id 'jacoco'
 }
 
 group = 'fi.poltsi.vempain'
-version = project.hasProperty("releaseVersion") ? project.releaseVersion : '0.0.1-SNAPSHOT'
+version = project.hasProperty("releaseVersion") ? project.releaseVersion : libs.versions.project.get()
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(javaVersion.toInteger())
+		languageVersion = JavaLanguageVersion.of(libs.versions.java.get().toInteger())
 	}
 }
 
@@ -30,33 +30,33 @@ configurations {
 }
 
 dependencies {
-	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor libs.lombok
 	implementation project(':api')
-	implementation "org.springframework.boot:spring-boot-starter-security:${springBootVersion}"
-	implementation "org.springframework.boot:spring-boot-starter-webmvc:${springBootVersion}"
-	implementation "org.springframework.boot:spring-boot-starter-data-jpa:${springBootVersion}"
-	implementation "org.springframework.boot:spring-boot-starter-validation:${springBootVersion}"
-	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
-	implementation "io.swagger.core.v3:swagger-annotations:${swaggerVersion}"
-	implementation "org.postgresql:postgresql:${postgresqlVersion}"
+	implementation libs.spring.boot.starter.security
+	implementation libs.spring.boot.starter.webmvc
+	implementation libs.spring.boot.starter.data.jpa
+	implementation libs.spring.boot.starter.validation
+	implementation libs.jjwt.api
+	implementation libs.swagger.annotations
+	implementation libs.postgresql
 	// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-	implementation "org.apache.commons:commons-lang3:3.20.0"
-	testImplementation platform("org.junit:junit-bom:${junitVersion}")
-	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
-	testImplementation "org.junit.platform:junit-platform-launcher:${junitVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-test:${springBootVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-security-test:${springBootVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test:${springBootVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa-test:${springBootVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-validation-test:${springBootVersion}"
-	testImplementation "org.testcontainers:testcontainers-junit-jupiter:${testContainersVersion}"
-	testImplementation "org.testcontainers:testcontainers-postgresql:${testContainersVersion}"
-	testImplementation "org.springframework.boot:spring-boot-starter-flyway:${springBootVersion}"
-	testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
-	runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
-	runtimeOnly "org.flywaydb:flyway-database-postgresql:${flywayVersion}"
+	implementation libs.commons.lang
+	testImplementation platform(libs.junit.bom)
+	testImplementation libs.junit.jupiter
+	testImplementation libs.junit.platform.launcher
+	testImplementation libs.spring.boot.starter.test
+	testImplementation libs.spring.boot.starter.security.test
+	testImplementation libs.spring.boot.starter.webmvc.test
+	testImplementation libs.spring.boot.starter.data.jpa.test
+	testImplementation libs.spring.boot.starter.validation.test
+	testImplementation libs.testcontainers.junit.jupiter
+	testImplementation libs.testcontainers.postgresql
+	testImplementation libs.spring.boot.starter.flyway
+	testImplementation libs.mockito.junit.jupiter
+	compileOnly libs.lombok
+	runtimeOnly libs.jjwt.impl
+	runtimeOnly libs.jjwt.jackson
+	runtimeOnly libs.flyway.database.postgresql
 }
 
 test {
@@ -65,7 +65,7 @@ test {
 }
 
 jacoco {
-	toolVersion = "0.8.13"
+	toolVersion = libs.versions.jacoco.get()
 }
 
 jacocoTestReport {
