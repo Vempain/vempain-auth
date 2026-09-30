@@ -16,6 +16,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -25,11 +29,8 @@ import java.util.Date;
 @Component
 public class JwtUtils {
 
-	private final SecretKey secretKey = Jwts.SIG.HS512.key()
-													  .build();
 	@Value("${vempain.app.jwt-expiration-ms}")
 	private       long      jwtExpirationMs;
-	// TODO This needs to be cleaned up as the secret is not used at all for the moment
 	@Value("${vempain.app.jwt-secret}")
 	private       String    jwtSecret;
 
@@ -39,11 +40,6 @@ public class JwtUtils {
 	}
 
 	public JwtToken generateJwtTokenForUser(String username, String login, String email) {
-		if (secretKey == null) {
-			log.error("The JWT signing key is null");
-			return null;
-		}
-
 		var nowDate = Instant.now();
 		var expDate = nowDate.plus(jwtExpirationMs, ChronoUnit.MILLIS);
 		var jwtId = jwtSecret + username + login + email;
@@ -54,7 +50,7 @@ public class JwtUtils {
 								 .id(jwtId)
 								 .issuedAt(Date.from(nowDate))
 								 .expiration(Date.from(expDate))
-								 .signWith(secretKey)
+								 .signWith(getSecretKey())
 								 .compact();
 		return JwtToken.builder()
 					   .tokenString(jwtTokenString)
@@ -65,7 +61,7 @@ public class JwtUtils {
 
 	private Claims extractAllClaims(String token) {
 		return Jwts.parser()
-				   .verifyWith(secretKey)
+				   .verifyWith(getSecretKey())
 				   .build()
 				   .parseSignedClaims(token)
 				   .getPayload();
@@ -98,8 +94,22 @@ public class JwtUtils {
 
 	private Jws<Claims> getJwsClaims(String jwtToken) {
 		return Jwts.parser()
-				   .verifyWith(secretKey)
+				   .verifyWith(getSecretKey())
 				   .build()
 				   .parseSignedClaims(jwtToken);
+	}
+
+	private SecretKey getSecretKey() {
+		if (jwtSecret == null || jwtSecret.isBlank()) {
+			throw new IllegalStateException("The JWT signing secret is not configured");
+		}
+
+		try {
+			var keyBytes = MessageDigest.getInstance("SHA-512")
+									   .digest(jwtSecret.getBytes(StandardCharsets.UTF_8));
+			return new SecretKeySpec(keyBytes, "HmacSHA512");
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-512 is not available", e);
+		}
 	}
 }
