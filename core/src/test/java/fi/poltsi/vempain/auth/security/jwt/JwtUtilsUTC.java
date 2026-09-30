@@ -52,6 +52,15 @@ class JwtUtilsUTC {
 	}
 
 	@Test
+	void tokenCanBeValidatedByAnotherInstanceWithTheSameSecret() {
+		JwtToken token = jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com");
+		var anotherJwtUtils = new JwtUtils();
+		ReflectionTestUtils.setField(anotherJwtUtils, "jwtSecret", "test-secret");
+
+		assertTrue(anotherJwtUtils.validateJwtToken(token.getTokenString()));
+	}
+
+	@Test
 	void validateJwtTokenMalformedTokenReturnsFalse() {
 		assertFalse(jwtUtils.validateJwtToken("not.a.valid.jwt.token"));
 	}
