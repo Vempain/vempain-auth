@@ -90,6 +90,8 @@ public class WebSecurityConfig {
 					}
 
 					auth
+							.requestMatchers(HttpMethod.GET, "/files/*/content")
+							.authenticated()
 							.requestMatchers(HttpMethod.GET, "/files/**", "/file-groups/**", "/tags/**")
 							.hasRole("ADMIN")
 							.requestMatchers(HttpMethod.POST, "/scan-files/**", "/publish/**", "/data-publish/**",
