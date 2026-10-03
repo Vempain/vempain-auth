@@ -5,21 +5,19 @@ import fi.poltsi.vempain.auth.security.jwt.AuthTokenFilter;
 import fi.poltsi.vempain.auth.service.UserDetailsServiceImpl;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,11 +33,8 @@ import java.util.List;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Slf4j
-@Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
-@RequiredArgsConstructor
-public class WebSecurityConfig {
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class WebSecurityConfig {
 	private final UserDetailsServiceImpl userDetailsServiceImpl;
 	private final AuthEntryPointJwt authEntryPointJwt;
 	private final Environment       environment;
@@ -89,20 +84,9 @@ public class WebSecurityConfig {
 								.denyAll();
 					}
 
-					auth
-							.requestMatchers(HttpMethod.GET, "/files/*/content")
-							.authenticated()
-							.requestMatchers(HttpMethod.GET, "/files/**", "/file-groups/**", "/tags/**")
-							.hasRole("ADMIN")
-							.requestMatchers(HttpMethod.POST, "/scan-files/**", "/publish/**", "/data-publish/**",
-							                 "/file-groups/**", "/tags/**", "/location/guard/**")
-							.hasRole("ADMIN")
-							.requestMatchers(HttpMethod.PUT, "/file-groups/**", "/tags/**", "/location/guard/**")
-							.hasRole("ADMIN")
-							.requestMatchers(HttpMethod.DELETE, "/files/**", "/file-groups/**", "/tags/**", "/location/guard/**")
-							.hasRole("ADMIN")
-							.anyRequest()
-							.authenticated();
+					configureApplicationAuthorization(auth);
+					auth.anyRequest()
+					    .authenticated();
 				})
 				.exceptionHandling(exception -> exception
 						.authenticationEntryPoint(authEntryPointJwt)
@@ -114,6 +98,9 @@ public class WebSecurityConfig {
 		;
 		return http.build();
 	}
+
+	protected abstract void configureApplicationAuthorization(
+			AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth);
 
 	@Bean(name = "corsConfigurationSource")
 	public CorsConfigurationSource corsConfigurationSource() {

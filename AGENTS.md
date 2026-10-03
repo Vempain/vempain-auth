@@ -29,7 +29,7 @@
 ## Database / Flyway
 
 - Auth schema migrations live in `core/src/main/resources/db/migration/auth/` (currently `V1__init.sql`).
-- The migration creates `user_account`, `acl`, `unit`, `user_unit`, plus the ACL sequence(s); ACL allocation logic depends on that schema existing.
+- The migration creates `user_account`, `acl`, `unit`, `user_unit`, plus the ACL sequence (s); ACL allocation logic depends on that schema existing.
 - Because this library is consumed on another app’s classpath, migration versions must not collide with the consuming service’s Flyway versions.
 
 ## Testing workflow
@@ -49,6 +49,8 @@
 ## Conventions specific to this repo
 
 - Formatting is tab-indented for Java (`.editorconfig`); avoid reformatting unrelated code.
+- Prefer Lombok annotations for applicable Java boilerplate such as constructors, accessors, builders, and logging, unless they obscure behavior or conflict
+  with framework requirements.
 - DTOs commonly use Lombok builders and snake_case JSON mappings; see `UserResponse`, `UnitResponse`, and `ResponseDeserializationUTC.java` for the
   serialization contract.
 - JSON contract is mandatory snake_case only (`total_pages`, `total_elements`, etc.); never introduce camelCase JSON field names in request/response DTOs,
@@ -64,4 +66,3 @@
 - Java toolchain is 25 and Spring Boot version is controlled via `gradle.properties`.
 - Artifacts publish to GitHub Packages as `vempain-auth-api` and `vempain-auth-core`; CI derives the release version from `VERSION` and existing Git tags.
 - Manual Postgres setup for local debugging exists in `docker_db.sh`, but automated tests prefer Testcontainers.
-
