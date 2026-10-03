@@ -1,0 +1,32 @@
+plugins {
+	id 'java'
+	alias(libs.plugins.freefair.lombok)
+	alias(libs.plugins.spring.dependency.management)
+}
+
+group = 'fi.poltsi.vempain'
+version = project.hasProperty("releaseVersion") ? project.releaseVersion : libs.versions.project.get()
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(libs.versions.java.get().toInteger())
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation project(':core')
+	implementation libs.spring.boot.starter.test
+	implementation libs.spring.boot.starter.security.test
+	implementation libs.spring.boot.starter.webmvc.test
+	testImplementation libs.junit.jupiter
+	testRuntimeOnly libs.junit.platform.launcher
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	dependsOn(':api:test', ':core:test')
+}

@@ -12,12 +12,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -84,7 +84,31 @@ public abstract class WebSecurityConfig {
 								.denyAll();
 					}
 
-					configureApplicationAuthorization(auth);
+					configureApplicationAuthorization(new ApplicationAuthorizationConfigurer() {
+						@Override
+						public void authenticated(String... patterns) {
+							auth.requestMatchers(patterns)
+							    .authenticated();
+						}
+
+						@Override
+						public void authenticated(HttpMethod method, String... patterns) {
+							auth.requestMatchers(method, patterns)
+							    .authenticated();
+						}
+
+						@Override
+						public void hasRole(String role, String... patterns) {
+							auth.requestMatchers(patterns)
+							    .hasRole(role);
+						}
+
+						@Override
+						public void hasRole(String role, HttpMethod method, String... patterns) {
+							auth.requestMatchers(method, patterns)
+							    .hasRole(role);
+						}
+					});
 					auth.anyRequest()
 					    .authenticated();
 				})
@@ -99,8 +123,20 @@ public abstract class WebSecurityConfig {
 		return http.build();
 	}
 
-	protected abstract void configureApplicationAuthorization(
-			AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth);
+	protected abstract void configureApplicationAuthorization(ApplicationAuthorizationConfigurer authorization);
+
+	/**
+	 * Restricted application-rule API. The shared authenticated catch-all is applied by the base configuration.
+	 */
+	protected interface ApplicationAuthorizationConfigurer {
+		void authenticated(String... patterns);
+
+		void authenticated(HttpMethod method, String... patterns);
+
+		void hasRole(String role, String... patterns);
+
+		void hasRole(String role, HttpMethod method, String... patterns);
+	}
 
 	@Bean(name = "corsConfigurationSource")
 	public CorsConfigurationSource corsConfigurationSource() {
