@@ -1,13 +1,11 @@
 package fi.poltsi.vempain.auth.tools;
 
 import lombok.experimental.UtilityClass;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 import java.util.List;
-import java.util.Map;
 
 @UtilityClass
 public class JsonTools {
@@ -35,40 +33,22 @@ public class JsonTools {
 		}
 		if (node.isObject()) {
 			ObjectNode objectNode = (ObjectNode) node;
-			Map<String, Object> asMap = MAPPER.convertValue(objectNode, new TypeReference<>() {
-			});
-			maskMap(asMap, targetField);
-			ObjectNode replaced = MAPPER.valueToTree(asMap);
-			objectNode.removeAll();
-			objectNode.setAll(replaced);
+			for (var entry : objectNode.properties()) {
+				if (targetField.equals(entry.getKey())) {
+					JsonNode value = entry.getValue();
+					if (value != null && !value.isNull()) {
+						String rawValue = value.isString() ? value.asString() : value.toString();
+						objectNode.put(entry.getKey(), maskValue(rawValue));
+					}
+				} else {
+					maskFields(entry.getValue(), targetField);
+				}
+			}
 		} else if (node.isArray()) {
 			for (JsonNode child : node) {
 				maskFields(child, targetField);
 			}
 		}
-	}
-
-	private static void maskMap(Map<String, Object> map, String targetField) {
-		map.replaceAll((key, value) -> {
-			if (value == null) {
-				return null;
-			}
-			if (targetField.equals(key)) {
-				return maskValue(value.toString());
-			}
-			if (value instanceof Map<?, ?> nested) {
-				//noinspection unchecked
-				maskMap((Map<String, Object>) nested, targetField);
-			} else if (value instanceof List<?> list) {
-				for (Object item : list) {
-					if (item instanceof Map<?, ?> nestedMap) {
-						//noinspection unchecked
-						maskMap((Map<String, Object>) nestedMap, targetField);
-					}
-				}
-			}
-			return value;
-		});
 	}
 
 

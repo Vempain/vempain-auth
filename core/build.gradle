@@ -15,6 +15,10 @@ java {
 	}
 }
 
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
+}
+
 jar {
 	archiveFileName = "vempain-auth-core-${version}.jar"
 }

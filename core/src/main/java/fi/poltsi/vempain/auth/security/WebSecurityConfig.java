@@ -5,20 +5,18 @@ import fi.poltsi.vempain.auth.security.jwt.AuthTokenFilter;
 import fi.poltsi.vempain.auth.service.UserDetailsServiceImpl;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -35,11 +33,8 @@ import java.util.List;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Slf4j
-@Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
-@RequiredArgsConstructor
-public class WebSecurityConfig {
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class WebSecurityConfig {
 	private final UserDetailsServiceImpl userDetailsServiceImpl;
 	private final AuthEntryPointJwt authEntryPointJwt;
 	private final Environment       environment;
@@ -89,20 +84,33 @@ public class WebSecurityConfig {
 								.denyAll();
 					}
 
-					auth
-							.requestMatchers(HttpMethod.GET, "/files/*/content")
-							.authenticated()
-							.requestMatchers(HttpMethod.GET, "/files/**", "/file-groups/**", "/tags/**")
-							.hasRole("ADMIN")
-							.requestMatchers(HttpMethod.POST, "/scan-files/**", "/publish/**", "/data-publish/**",
-							                 "/file-groups/**", "/tags/**", "/location/guard/**")
-							.hasRole("ADMIN")
-							.requestMatchers(HttpMethod.PUT, "/file-groups/**", "/tags/**", "/location/guard/**")
-							.hasRole("ADMIN")
-							.requestMatchers(HttpMethod.DELETE, "/files/**", "/file-groups/**", "/tags/**", "/location/guard/**")
-							.hasRole("ADMIN")
-							.anyRequest()
-							.authenticated();
+					configureApplicationAuthorization(new ApplicationAuthorizationConfigurer() {
+						@Override
+						public void authenticated(String... patterns) {
+							auth.requestMatchers(patterns)
+							    .authenticated();
+						}
+
+						@Override
+						public void authenticated(HttpMethod method, String... patterns) {
+							auth.requestMatchers(method, patterns)
+							    .authenticated();
+						}
+
+						@Override
+						public void hasRole(String role, String... patterns) {
+							auth.requestMatchers(patterns)
+							    .hasRole(role);
+						}
+
+						@Override
+						public void hasRole(String role, HttpMethod method, String... patterns) {
+							auth.requestMatchers(method, patterns)
+							    .hasRole(role);
+						}
+					});
+					auth.anyRequest()
+					    .authenticated();
 				})
 				.exceptionHandling(exception -> exception
 						.authenticationEntryPoint(authEntryPointJwt)
@@ -113,6 +121,21 @@ public class WebSecurityConfig {
 				.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class)
 		;
 		return http.build();
+	}
+
+	protected abstract void configureApplicationAuthorization(ApplicationAuthorizationConfigurer authorization);
+
+	/**
+	 * Restricted application-rule API. The shared authenticated catch-all is applied by the base configuration.
+	 */
+	protected interface ApplicationAuthorizationConfigurer {
+		void authenticated(String... patterns);
+
+		void authenticated(HttpMethod method, String... patterns);
+
+		void hasRole(String role, String... patterns);
+
+		void hasRole(String role, HttpMethod method, String... patterns);
 	}
 
 	@Bean(name = "corsConfigurationSource")
