@@ -1,5 +1,7 @@
 package fi.poltsi.vempain.auth.testservice;
 
+import fi.poltsi.vempain.auth.repository.AclRepository;
+import fi.poltsi.vempain.auth.security.AclAuthorizationService;
 import fi.poltsi.vempain.auth.security.jwt.AuthEntryPointJwt;
 import fi.poltsi.vempain.auth.service.UserDetailsServiceImpl;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -18,5 +20,15 @@ public class TestServiceDependencies {
 	@Bean
 	AuthEntryPointJwt authEntryPointJwt() {
 		return new AuthEntryPointJwt();
+	}
+
+	@Bean
+	AclRepository aclRepository() {
+		return mock(AclRepository.class);
+	}
+
+	@Bean("aclAuthorizationService")
+	AclAuthorizationService aclAuthorizationService(AclRepository aclRepository) {
+		return new AclAuthorizationService(aclRepository);
 	}
 }

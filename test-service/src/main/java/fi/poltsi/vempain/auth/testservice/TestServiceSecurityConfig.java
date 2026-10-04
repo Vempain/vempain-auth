@@ -25,6 +25,6 @@ public class TestServiceSecurityConfig extends WebSecurityConfig {
 	@Override
 	protected void configureApplicationAuthorization(ApplicationAuthorizationConfigurer authorization) {
 		authorization.authenticated(HttpMethod.GET, "/test-service/protected");
-		authorization.hasRole("ADMIN", HttpMethod.POST, "/test-service/admin");
+		authorization.authenticated("/test-service/resource/**");
 	}
 }
