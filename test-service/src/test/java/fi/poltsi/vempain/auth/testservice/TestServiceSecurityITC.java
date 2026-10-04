@@ -86,6 +86,19 @@ class TestServiceSecurityITC {
 	}
 
 	@Test
+	void aclForDifferentUserCannotAccessResource() throws Exception {
+		when(userDetailsService.loadUserByUsername("user")).thenReturn(userDetails(1L, "user"));
+		when(aclRepository.getAclByAclId(42L)).thenReturn(java.util.List.of(Acl.builder()
+																			   .aclId(42L)
+																			   .userId(2L)
+																			   .readPrivilege(true)
+																			   .build()));
+
+		mockMvc.perform(get("/test-service/resource/42").header("Authorization", "Bearer " + tokenFor("user")))
+			   .andExpect(status().isForbidden());
+	}
+
+	@Test
 	void unitAclControlsResourceRead() throws Exception {
 		when(userDetailsService.loadUserByUsername("unit-user")).thenReturn(userDetails("unit-user",
 																						Set.of(Unit.builder()
@@ -99,6 +112,22 @@ class TestServiceSecurityITC {
 
 		mockMvc.perform(get("/test-service/resource/42").header("Authorization", "Bearer " + tokenFor("unit-user")))
 			   .andExpect(status().isOk());
+	}
+
+	@Test
+	void aclForUnrelatedUnitCannotAccessResource() throws Exception {
+		when(userDetailsService.loadUserByUsername("unit-user")).thenReturn(userDetails("unit-user",
+																						Set.of(Unit.builder()
+		                                                                                           .id(7L)
+		                                                                                           .build())));
+		when(aclRepository.getAclByAclId(42L)).thenReturn(java.util.List.of(Acl.builder()
+																			   .aclId(42L)
+																			   .unitId(8L)
+																			   .readPrivilege(true)
+																			   .build()));
+
+		mockMvc.perform(get("/test-service/resource/42").header("Authorization", "Bearer " + tokenFor("unit-user")))
+			   .andExpect(status().isForbidden());
 	}
 
 	@Test
@@ -128,10 +157,18 @@ class TestServiceSecurityITC {
 	}
 
 	private UserDetailsImpl userDetails(String username) {
-		return userDetails(username, Set.of());
+		return userDetails(1L, username, Set.of());
 	}
 
 	private UserDetailsImpl userDetails(String username, Set<Unit> units) {
-		return new UserDetailsImpl(1L, username, username, username + "@example.test", "password", units, Set.of());
+		return userDetails(1L, username, units);
+	}
+
+	private UserDetailsImpl userDetails(Long id, String username) {
+		return userDetails(id, username, Set.of());
+	}
+
+	private UserDetailsImpl userDetails(Long id, String username, Set<Unit> units) {
+		return new UserDetailsImpl(id, username, username, username + "@example.test", "password", units, Set.of());
 	}
 }

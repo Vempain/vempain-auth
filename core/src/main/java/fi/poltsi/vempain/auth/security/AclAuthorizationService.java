@@ -49,6 +49,10 @@ public class AclAuthorizationService {
 		}
 
 		var userId = user.getId();
+		if (userId == null) {
+			return false;
+		}
+
 		var unitIds = user.getUnits() == null
 					  ? java.util.Set.<Long>of()
 					  : user.getUnits()
