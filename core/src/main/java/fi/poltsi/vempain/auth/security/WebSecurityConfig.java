@@ -96,18 +96,6 @@ public abstract class WebSecurityConfig {
 							auth.requestMatchers(method, patterns)
 							    .authenticated();
 						}
-
-						@Override
-						public void hasRole(String role, String... patterns) {
-							auth.requestMatchers(patterns)
-							    .hasRole(role);
-						}
-
-						@Override
-						public void hasRole(String role, HttpMethod method, String... patterns) {
-							auth.requestMatchers(method, patterns)
-							    .hasRole(role);
-						}
 					});
 					auth.anyRequest()
 					    .authenticated();
@@ -132,10 +120,6 @@ public abstract class WebSecurityConfig {
 		void authenticated(String... patterns);
 
 		void authenticated(HttpMethod method, String... patterns);
-
-		void hasRole(String role, String... patterns);
-
-		void hasRole(String role, HttpMethod method, String... patterns);
 	}
 
 	@Bean(name = "corsConfigurationSource")

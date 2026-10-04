@@ -1,5 +1,8 @@
 package fi.poltsi.vempain.auth.testservice;
 
+import fi.poltsi.vempain.auth.entity.Acl;
+import fi.poltsi.vempain.auth.entity.Unit;
+import fi.poltsi.vempain.auth.repository.AclRepository;
 import fi.poltsi.vempain.auth.security.jwt.JwtToken;
 import fi.poltsi.vempain.auth.security.jwt.JwtUtils;
 import fi.poltsi.vempain.auth.service.UserDetailsImpl;
@@ -7,13 +10,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
 import java.util.Set;
 
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -42,6 +44,14 @@ class TestServiceSecurityITC {
 	@Autowired
 	private UserDetailsService userDetailsService;
 
+	@Autowired
+	private AclRepository aclRepository;
+
+	@org.junit.jupiter.api.BeforeEach
+	void resetAclState() {
+		reset(aclRepository);
+	}
+
 	@Test
 	void protectedApplicationEndpointRequiresAuthentication() throws Exception {
 		mockMvc.perform(get("/test-service/protected"))
@@ -56,17 +66,60 @@ class TestServiceSecurityITC {
 	}
 
 	@Test
-	void nonAdminUserCannotAccessAdminApplicationEndpoint() throws Exception {
+	void authenticatedUserWithoutAclCannotAccessResource() throws Exception {
 		when(userDetailsService.loadUserByUsername("user")).thenReturn(userDetails("user"));
-		mockMvc.perform(post("/test-service/admin").header("Authorization", "Bearer " + tokenFor("user")))
+		mockMvc.perform(get("/test-service/resource/42").header("Authorization", "Bearer " + tokenFor("user")))
 			   .andExpect(status().isForbidden());
 	}
 
 	@Test
-	void adminUserCanAccessAdminApplicationEndpoint() throws Exception {
-		when(userDetailsService.loadUserByUsername("admin")).thenReturn(userDetails("admin", "ROLE_ADMIN"));
-		mockMvc.perform(post("/test-service/admin").header("Authorization", "Bearer " + tokenFor("admin")))
+	void userAclControlsResourceRead() throws Exception {
+		when(userDetailsService.loadUserByUsername("user")).thenReturn(userDetails("user"));
+		when(aclRepository.getAclByAclId(42L)).thenReturn(java.util.List.of(Acl.builder()
+																			   .aclId(42L)
+																			   .userId(1L)
+																			   .readPrivilege(true)
+																			   .build()));
+
+		mockMvc.perform(get("/test-service/resource/42").header("Authorization", "Bearer " + tokenFor("user")))
 			   .andExpect(status().isOk());
+	}
+
+	@Test
+	void unitAclControlsResourceRead() throws Exception {
+		when(userDetailsService.loadUserByUsername("unit-user")).thenReturn(userDetails("unit-user",
+																						Set.of(Unit.builder()
+		                                                                                           .id(7L)
+		                                                                                           .build())));
+		when(aclRepository.getAclByAclId(42L)).thenReturn(java.util.List.of(Acl.builder()
+																			   .aclId(42L)
+																			   .unitId(7L)
+																			   .readPrivilege(true)
+																			   .build()));
+
+		mockMvc.perform(get("/test-service/resource/42").header("Authorization", "Bearer " + tokenFor("unit-user")))
+			   .andExpect(status().isOk());
+	}
+
+	@Test
+	void eachResourceOperationUsesItsOwnAclPrivilege() throws Exception {
+		when(userDetailsService.loadUserByUsername("user")).thenReturn(userDetails("user"));
+		when(aclRepository.getAclByAclId(42L)).thenReturn(java.util.List.of(Acl.builder()
+																			   .aclId(42L)
+																			   .userId(1L)
+																			   .createPrivilege(true)
+																			   .modifyPrivilege(false)
+																			   .deletePrivilege(false)
+																			   .build()));
+
+		mockMvc.perform(post("/test-service/resource/42").header("Authorization", "Bearer " + tokenFor("user")))
+			   .andExpect(status().isOk());
+		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/test-service/resource/42")
+																						   .header("Authorization", "Bearer " + tokenFor("user")))
+			   .andExpect(status().isForbidden());
+		mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/test-service/resource/42")
+																						   .header("Authorization", "Bearer " + tokenFor("user")))
+			   .andExpect(status().isForbidden());
 	}
 
 	private String tokenFor(String username) {
@@ -74,10 +127,11 @@ class TestServiceSecurityITC {
 		return token.getTokenString();
 	}
 
-	private UserDetailsImpl userDetails(String username, String... authorities) {
-		return new UserDetailsImpl(1L, username, username, username + "@example.test", "password", Set.of(),
-								   Arrays.stream(authorities)
-		                                 .map(SimpleGrantedAuthority::new)
-		                                 .toList());
+	private UserDetailsImpl userDetails(String username) {
+		return userDetails(username, Set.of());
+	}
+
+	private UserDetailsImpl userDetails(String username, Set<Unit> units) {
+		return new UserDetailsImpl(1L, username, username, username + "@example.test", "password", units, Set.of());
 	}
 }

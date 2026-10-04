@@ -23,6 +23,10 @@
   `UnitResponse`.
 - ACLs are central to the data model: `AbstractVempainEntity` requires `aclId`, `creator`, `created`, and optional modifier fields; `AclService` validates these
   heavily before save/update.
+- Authorization is resource-based, not role-based. Every protected resource carries an `acl_id`; `AclAuthorizationService` grants an operation only when
+  the authenticated user or one of their units has a matching ACL row with the requested read/create/modify/delete privilege. Applications should keep
+  endpoint authentication in their local `WebSecurityConfig` and apply ACL checks at the resource service/controller boundary with
+  `@PreAuthorize` or an equivalent explicit service call. Do not add `hasRole`/`ROLE_*` authorization rules.
 - Password policy lives in `core/.../tools/AuthTools.java` (`passwordCheck` + bcrypt strength 12). Tests creating users should hash passwords with
   `AuthTools.passwordHash(...)` or the configured `PasswordEncoder`.
 
