@@ -70,3 +70,8 @@
 - Java toolchain is 25 and Spring Boot version is controlled via `gradle.properties`.
 - Artifacts publish to GitHub Packages as `vempain-auth-api` and `vempain-auth-core`; CI derives the release version from `VERSION` and existing Git tags.
 - Manual Postgres setup for local debugging exists in `docker_db.sh`, but automated tests prefer Testcontainers.
+
+## Tag ACL rule
+
+Tags are metadata, not ACL-bearing resources. Tag entities have no ACL information, so tag list, search, and mutation endpoints must not perform ACL checks on
+tags. ACL checks apply only to resources that explicitly carry an ACL.
