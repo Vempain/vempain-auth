@@ -1,0 +1,182 @@
+package fi.poltsi.vempain.auth.controller;
+
+import fi.poltsi.vempain.auth.IntegrationTestSetup;
+import fi.poltsi.vempain.auth.TestApp;
+import fi.poltsi.vempain.auth.api.AccountStatus;
+import fi.poltsi.vempain.auth.api.PrivacyType;
+import fi.poltsi.vempain.auth.api.request.LoginRequest;
+import fi.poltsi.vempain.auth.entity.Unit;
+import fi.poltsi.vempain.auth.entity.UserAccount;
+import fi.poltsi.vempain.auth.repository.UnitRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
+import fi.poltsi.vempain.auth.security.jwt.JwtToken;
+import fi.poltsi.vempain.auth.security.jwt.JwtUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Set;
+
+import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest(classes = TestApp.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
+class LoginCTC extends IntegrationTestSetup {
+
+	@Autowired
+	private MockMvc               mockMvc;
+	@Autowired
+	private ObjectMapper          objectMapper;
+	@Autowired
+	private PasswordEncoder       passwordEncoder;
+	@Autowired
+	private UserAccountRepository userAccountRepository;
+	@Autowired
+	private UnitRepository        unitRepository;
+	@MockitoBean
+	private JwtUtils              jwtUtils;
+
+	@BeforeEach
+	void setup() {
+		var unitAclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
+		Unit unit = Unit.builder()
+						.name("USER")
+						// add required audit fields
+						.creator(ADMIN_ID)
+						.created(Instant.now())
+						// if Unit extends AbstractVempainEntity, aclId must be positive
+						.aclId(unitAclId)
+						.build();
+		unit = unitRepository.save(unit);
+		var userAclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
+
+		var user = UserAccount.builder()
+							  .loginName("testuser")
+							  .nick("Testy")
+							  .email("test@example.com")
+							  .password(passwordEncoder.encode("S3cure-Pass!"))
+							  .birthday(Instant.now()
+											   .minus(100000, java.time.temporal.ChronoUnit.DAYS))
+							  .name("testuser")
+							  .privacyType(PrivacyType.PUBLIC)
+							  .status(AccountStatus.ACTIVE)
+							  .locked(false)
+							  .aclId(userAclId)
+							  .units(Set.of(unit))
+							  .creator(ADMIN_ID)
+							  .created(Instant.now())
+							  .build();
+		userAccountRepository.save(user);
+
+		var jwtToken = JwtToken.builder()
+							   .tokenString("test.jwt.token")
+							   .issuedAt(Instant.now())
+							   .expiresAt(Instant.now()
+												 .plus(10, ChronoUnit.DAYS))
+							   .build();
+		Mockito.when(jwtUtils.generateJwtToken(any()))
+			   .thenReturn(jwtToken);
+	}
+
+	@Test
+	void loginOk() throws Exception {
+		var req = LoginRequest.builder()
+							  .login("testuser")
+							  .password("S3cure-Pass!")
+							  .build();
+
+		mockMvc.perform(
+					   post("/login")
+							   .contentType(MediaType.APPLICATION_JSON)
+							   .content(objectMapper.writeValueAsString(req)))
+			   .andExpect(status().isOk())
+			   .andExpect(jsonPath("$.token", notNullValue()))
+			   .andExpect(jsonPath("$.login").value("testuser"));
+	}
+
+	@Test
+	void loginLockedUserReturns404() throws Exception {
+		// Create a locked user
+		var lockedUnitAclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
+		Unit lockedUnit = Unit.builder()
+							  .name("LOCKED_USER_UNIT")
+							  .creator(ADMIN_ID)
+							  .created(Instant.now())
+							  .aclId(lockedUnitAclId)
+							  .build();
+		lockedUnit = unitRepository.save(lockedUnit);
+
+		var lockedUserAclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
+		var lockedUser = UserAccount.builder()
+									.loginName("lockeduser")
+									.nick("Locked")
+									.email("locked@example.com")
+									.password(passwordEncoder.encode("S3cure-Pass!"))
+									.birthday(Instant.now()
+		                                             .minus(100000, ChronoUnit.DAYS))
+									.name("lockeduser")
+									.privacyType(PrivacyType.PUBLIC)
+									.status(AccountStatus.ACTIVE)
+									.locked(true)   // account is locked
+									.aclId(lockedUserAclId)
+									.units(Set.of(lockedUnit))
+									.creator(ADMIN_ID)
+									.created(Instant.now())
+									.build();
+		userAccountRepository.save(lockedUser);
+
+		var req = LoginRequest.builder()
+							  .login("lockeduser")
+							  .password("S3cure-Pass!")
+							  .build();
+
+		mockMvc.perform(
+					   post("/login")
+							   .contentType(MediaType.APPLICATION_JSON)
+							   .content(objectMapper.writeValueAsString(req)))
+			   .andExpect(status().isNotFound());
+	}
+
+	@Test
+	void loginWrongPasswordReturns404() throws Exception {
+		var req = LoginRequest.builder()
+							  .login("testuser")
+							  .password("WrongPassword!")
+							  .build();
+
+		mockMvc.perform(
+					   post("/login")
+							   .contentType(MediaType.APPLICATION_JSON)
+							   .content(objectMapper.writeValueAsString(req)))
+			   .andExpect(status().isNotFound());
+	}
+
+	@Test
+	void loginUnknownUserReturns404() throws Exception {
+		var req = LoginRequest.builder()
+							  .login("nosuchuser")
+							  .password("AnyPass1!")
+							  .build();
+
+		mockMvc.perform(
+					   post("/login")
+							   .contentType(MediaType.APPLICATION_JSON)
+							   .content(objectMapper.writeValueAsString(req)))
+			   .andExpect(status().isNotFound());
+	}
+}

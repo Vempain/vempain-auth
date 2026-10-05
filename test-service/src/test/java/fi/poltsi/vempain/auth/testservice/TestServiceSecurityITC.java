@@ -131,6 +131,28 @@ class TestServiceSecurityITC {
 	}
 
 	@Test
+	void resourceWithoutAssignedAclIsAlwaysForbidden() throws Exception {
+		when(userDetailsService.loadUserByUsername("user")).thenReturn(userDetails("user"));
+
+		mockMvc.perform(get("/test-service/resource/0").header("Authorization", "Bearer " + tokenFor("user")))
+			   .andExpect(status().isForbidden());
+	}
+
+	@Test
+	void aclRowWithoutRequestedPrivilegeIsForbidden() throws Exception {
+		when(userDetailsService.loadUserByUsername("user")).thenReturn(userDetails("user"));
+		when(aclRepository.getAclByAclId(42L)).thenReturn(java.util.List.of(Acl.builder()
+																			   .aclId(42L)
+																			   .userId(1L)
+																			   .readPrivilege(false)
+																			   .modifyPrivilege(true)
+																			   .build()));
+
+		mockMvc.perform(get("/test-service/resource/42").header("Authorization", "Bearer " + tokenFor("user")))
+			   .andExpect(status().isForbidden());
+	}
+
+	@Test
 	void eachResourceOperationUsesItsOwnAclPrivilege() throws Exception {
 		when(userDetailsService.loadUserByUsername("user")).thenReturn(userDetails("user"));
 		when(aclRepository.getAclByAclId(42L)).thenReturn(java.util.List.of(Acl.builder()
