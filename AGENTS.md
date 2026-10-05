@@ -2,7 +2,9 @@
 
 ## What this repo is
 
-- `vempain-auth` is a **shared Spring Boot library**, not a runnable service. The root project has two Gradle modules: `api` and `core` (`settings.gradle`).
+- `vempain-auth` is a **shared Spring Boot library**, not a runnable service. The root project has three Gradle modules: `api`, `core` and `test-service`
+  (`settings.gradle`); `test-service` is a minimal consumer application (`TestServiceApplication`, `TestServiceSecurityConfig`, `TestServiceController`) used to
+  verify the security wiring and ACL authorization on a real classpath over MockMvc.
 - `api/` publishes request/response DTOs and REST interfaces; `core/` publishes the Spring components that implement them.
 - Tests need an explicit bootstrapping app because there is no production `@SpringBootApplication`; use `core/src/test/java/fi/poltsi/vempain/auth/TestApp.java`
   and `IntegrationTestSetup.java` as the reference pattern.
@@ -24,9 +26,14 @@
 - ACLs are central to the data model: `AbstractVempainEntity` requires `aclId`, `creator`, `created`, and optional modifier fields; `AclService` validates these
   heavily before save/update.
 - Authorization is resource-based, not role-based. Every protected resource carries an `acl_id`; `AclAuthorizationService` grants an operation only when
-  the authenticated user or one of their units has a matching ACL row with the requested read/create/modify/delete privilege. Applications should keep
-  endpoint authentication in their local `WebSecurityConfig` and apply ACL checks at the resource service/controller boundary with
-  `@PreAuthorize` or an equivalent explicit service call. Do not add `hasRole`/`ROLE_*` authorization rules.
+  the authenticated user or one of their units has a matching ACL row with the requested read/create/modify/delete privilege. It fails closed: a
+  non-positive `acl_id`, missing ACL rows, an anonymous or non-Vempain principal all yield `false`. Applications should keep endpoint authentication
+  in their local `WebSecurityConfig` and apply ACL checks at the resource service/controller boundary with `@PreAuthorize` or an equivalent explicit
+  service call. Do not add `hasRole`/`ROLE_*` authorization rules or any test-mode bypass.
+- `AclAuthorizationService` must stay at 100% line coverage inside this repository, so regressions are caught before a release is consumed by the
+  backends: `AclAuthorizationServiceUTC` (every branch with mocks), `AclAuthorizationServiceITC` (real ACL rows in PostgreSQL) and the
+  `test-service` module's `TestServiceSecurityITC` (the `@PreAuthorize("@aclAuthorizationService.canRead(#p0)")` pattern over HTTP) all exercise
+  granted and denied cases. Extend them whenever the evaluation rules change.
 - Password policy lives in `core/.../tools/AuthTools.java` (`passwordCheck` + bcrypt strength 12). Tests creating users should hash passwords with
   `AuthTools.passwordHash(...)` or the configured `PasswordEncoder`.
 
@@ -44,11 +51,13 @@
     - `./gradlew :core:test`
     - `./gradlew clean test`
 - Integration tests use PostgreSQL Testcontainers (`postgres:18-alpine`) and Flyway, not H2. See `IntegrationTestSetup.java`, `AclServiceConcurrencyITC.java`,
-  and `LoginRTC.java`.
+  and `LoginCTC.java`.
 - `IntegrationTestSetup` keeps the seeded admin user (`Constants.ADMIN_ID == 1L`) and resets other rows before each test; do not write tests that blindly delete
   all users.
-- Test suffixes are meaningful: `UTC` = unit-style tests, `ITC` = integration/container tests, `RTC` = controller/request tests, `JTC` = JSON/DTO contract
-  tests.
+- Test suffixes are meaningful and shared across the Vempain Java repos: `UTC` = unit-style tests, `ITC` = integration/container tests, `CTC` =
+  controller tests (MockMvc, e.g. `LoginCTC`), `JTC` = JSON/DTO contract tests (`PagedRequestJTC`, `PagedResponseJTC`, `AclRequestJTC`). Helper
+  classes (`TestApp`, `IntegrationTestSetup`, `Test*Config`, `Test*Tools`) carry no suffix.
+- After every code modification, run the relevant module tests and report the results in the response.
 
 ## Conventions specific to this repo
 
@@ -67,7 +76,7 @@
 
 ## Publishing / versions
 
-- Java toolchain is 25 and Spring Boot version is controlled via `gradle.properties`.
+- Java toolchain and Spring Boot versions are pinned in `gradle/libs.versions.toml` (`java`, `spring-boot`); keep them aligned with the consuming backends.
 - Artifacts publish to GitHub Packages as `vempain-auth-api` and `vempain-auth-core`; CI derives the release version from `VERSION` and existing Git tags.
 - Manual Postgres setup for local debugging exists in `docker_db.sh`, but automated tests prefer Testcontainers.
 
