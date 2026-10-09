@@ -108,10 +108,21 @@ public abstract class WebSecurityConfig {
 				.authenticationProvider(authenticationProvider())
 				.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class)
 		;
+		for (var filter : additionalAuthenticationFilters()) {
+			http.addFilterBefore(filter, AuthTokenFilter.class);
+		}
 		return http.build();
 	}
 
 	protected abstract void configureApplicationAuthorization(ApplicationAuthorizationConfigurer authorization);
+
+	/**
+	 * Filters a host application adds in front of the JWT filter, e.g. a service-to-service API token filter. They run inside the
+	 * security filter chain, so the authentication they set is the one the rest of the request sees.
+	 */
+	protected List<jakarta.servlet.Filter> additionalAuthenticationFilters() {
+		return List.of();
+	}
 
 	/**
 	 * Restricted application-rule API. The shared authenticated catch-all is applied by the base configuration.

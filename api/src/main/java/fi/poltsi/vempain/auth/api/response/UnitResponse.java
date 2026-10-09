@@ -9,6 +9,8 @@ import lombok.experimental.SuperBuilder;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
+import java.util.List;
+
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 @Data
@@ -21,4 +23,8 @@ public class UnitResponse extends AbstractResponse {
 	private String name;
 	@Schema(description = "Unit description", example = "Normal users")
 	private String description;
+	@Schema(description = "IDs of the users that are direct members of the unit", example = "[3, 7]")
+	private List<Long> userIds;
+	@Schema(description = "IDs of the units that are direct members (sub-units) of the unit", example = "[12]")
+	private List<Long> unitIds;
 }

@@ -49,6 +49,9 @@ public class UserRequest {
 	private String           description;
 	@Schema(description = "List of ACL requests", example = "{acl_id: 1, user: 1, unit: null, \"YES\", \"YES\", \"NO\", \"NO\"}")
 	private List<AclRequest> acls;
+	@Schema(description = "IDs of the units the user is a direct member of; replaces the current memberships when given, leaves them untouched when null",
+			example = "[12]")
+	private List<Long> unitIds;
 	@Schema(description = "Whether the object should be locked from editing", example = "false")
 	private boolean          locked;
 	@Schema(description = "User ID of the creator", example = "1")

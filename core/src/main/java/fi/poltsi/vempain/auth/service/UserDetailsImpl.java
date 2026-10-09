@@ -44,11 +44,16 @@ public class UserDetailsImpl implements UserDetails {
 	}
 
 	public static UserDetailsImpl build(UserAccount userAccount) {
-		List<GrantedAuthority> authorities = userAccount.getUnits().stream()
-														.map(unit -> new SimpleGrantedAuthority(unit.getName()))
-														.collect(Collectors.toList());
+		return build(userAccount, userAccount.getUnits());
+	}
 
-		var units = userAccount.getUnits();
+	/**
+	 * Builds the principal with the given effective units (direct memberships plus the units containing them).
+	 */
+	public static UserDetailsImpl build(UserAccount userAccount, Set<Unit> units) {
+		List<GrantedAuthority> authorities = (units == null ? Set.<Unit>of() : units).stream()
+																					 .map(unit -> new SimpleGrantedAuthority(unit.getName()))
+																					 .collect(Collectors.toList());
 
 		return new UserDetailsImpl(
 				userAccount.getId(),
