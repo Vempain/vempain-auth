@@ -79,6 +79,8 @@
 - Java toolchain and Spring Boot versions are pinned in `gradle/libs.versions.toml` (`java`, `spring-boot`); keep them aligned with the consuming backends.
 - Artifacts publish to GitHub Packages as `vempain-auth-api` and `vempain-auth-core`; CI derives the release version from `VERSION` and existing Git tags.
 - Manual Postgres setup for local debugging exists in `docker_db.sh`, but automated tests prefer Testcontainers.
+- Dependabot (`.github/dependabot.yaml`) covers GitHub Actions and Gradle from Maven Central; this library consumes no GitHub Packages
+  artifacts, so it declares no private registry (the consuming backends do).
 
 ## Tag ACL rule
 
