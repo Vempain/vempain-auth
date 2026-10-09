@@ -13,15 +13,23 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,6 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class UnitMembershipITC extends IntegrationTestSetup {
 	@Autowired
 	private UserDetailsServiceImpl userDetailsService;
+	@Autowired
+	private PlatformTransactionManager transactionManager;
 
 	private long unit(String name) {
 		var aclId = testITCTools.generateAcl(ADMIN_ID, null, true, true, true, true);
@@ -144,6 +154,43 @@ class UnitMembershipITC extends IntegrationTestSetup {
 	}
 
 	@Test
+	void concurrentMembershipUpdatesCannotCreateACycle() throws Exception {
+		var a = unit("A");
+		var b = unit("B");
+		var firstUpdateComplete = new CountDownLatch(1);
+		var releaseFirstUpdate = new CountDownLatch(1);
+		var secondUpdateStarted = new CountDownLatch(1);
+		var executor = Executors.newFixedThreadPool(2);
+
+		try {
+			var firstUpdate = executor.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+				unitService.updateMembers(a, null, List.of(b));
+				firstUpdateComplete.countDown();
+				await(releaseFirstUpdate);
+			}));
+			assertTrue(firstUpdateComplete.await(5, TimeUnit.SECONDS));
+
+			var secondUpdate = executor.submit(() -> {
+				secondUpdateStarted.countDown();
+				unitService.updateMembers(b, null, List.of(a));
+			});
+			assertTrue(secondUpdateStarted.await(5, TimeUnit.SECONDS));
+			assertThrows(TimeoutException.class, () -> secondUpdate.get(200, TimeUnit.MILLISECONDS));
+
+			releaseFirstUpdate.countDown();
+			firstUpdate.get(5, TimeUnit.SECONDS);
+			var exception = assertThrows(ExecutionException.class, () -> secondUpdate.get(5, TimeUnit.SECONDS));
+			assertTrue(exception.getCause() instanceof ResponseStatusException);
+			assertEquals(HttpStatus.BAD_REQUEST, ((ResponseStatusException) exception.getCause()).getStatusCode());
+		} finally {
+			releaseFirstUpdate.countDown();
+			executor.shutdownNow();
+		}
+
+		assertFalse(unitService.findById(b).getUnitIds().contains(a));
+	}
+
+	@Test
 	void principalCarriesEveryContainingUnit() {
 		runAsAdmin();
 		var a = unit("A");
@@ -184,5 +231,16 @@ class UnitMembershipITC extends IntegrationTestSetup {
 																		 .unitIds(List.of())
 																		 .build());
 		assertEquals(List.of(), cleared.getUnitIds());
+	}
+
+	private static void await(CountDownLatch latch) {
+		try {
+			if (!latch.await(5, TimeUnit.SECONDS)) {
+				throw new AssertionError("Timed out waiting for the concurrent membership update test");
+			}
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			throw new AssertionError(exception);
+		}
 	}
 }

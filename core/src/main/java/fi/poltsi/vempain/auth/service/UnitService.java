@@ -102,6 +102,7 @@ public class UnitService {
 	@Transactional(propagation = Propagation.REQUIRED)
 	public void updateMembers(long unitId, List<Long> userIds, List<Long> childUnitIds) {
 		if (childUnitIds != null) {
+			unitMembershipService.lockHierarchyMutations();
 			var requested = new LinkedHashSet<>(childUnitIds);
 			requested.remove(null);
 			if (requested.contains(unitId)) {

@@ -39,7 +39,7 @@ public class AclController implements AclAPI {
 		var rows = aclService.findAclByAclId(aclId);
 
 		if (rows.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "There are no ACL in the database");
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No ACL was found for ID " + aclId);
 		}
 
 		return ResponseEntity.ok(rows.stream()

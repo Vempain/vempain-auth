@@ -49,9 +49,9 @@ final class PagingTools {
 
 		int size  = Math.max(1, request.getSize());
 		int pages = (int) Math.ceil((double) responses.size() / size);
-		int from  = Math.min(Math.max(0, request.getPage()) * size, responses.size());
-		int to    = Math.min(from + size, responses.size());
-		return PagedResponse.of(responses.subList(from, to), request.getPage(), size, responses.size(), pages, request.getPage() == 0,
-								pages == 0 || request.getPage() + 1 >= pages);
+		long from = Math.min((long) Math.max(0, request.getPage()) * size, responses.size());
+		long to   = Math.min(from + size, responses.size());
+		return PagedResponse.of(responses.subList((int) from, (int) to), request.getPage(), size, responses.size(), pages,
+								request.getPage() == 0, pages == 0 || (long) request.getPage() >= (long) pages - 1);
 	}
 }

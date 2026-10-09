@@ -4,7 +4,10 @@ import fi.poltsi.vempain.auth.entity.UnitUnit;
 import fi.poltsi.vempain.auth.repository.UnitUnitRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.ConnectionCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayDeque;
@@ -23,7 +26,25 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class UnitMembershipService {
+	private static final int          HIERARCHY_LOCK_CLASS_ID  = 0x56454D50;
+	private static final int          HIERARCHY_LOCK_OBJECT_ID = 0x41494E54;
 	private final UnitUnitRepository unitUnitRepository;
+	private final JdbcTemplate        jdbcTemplate;
+
+	/**
+	 * Serializes hierarchy changes until the surrounding transaction commits, so cycle checks see prior committed changes.
+	 */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public void lockHierarchyMutations() {
+		jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
+			try (var statement = connection.prepareStatement("SELECT pg_advisory_xact_lock(?, ?)")) {
+				statement.setInt(1, HIERARCHY_LOCK_CLASS_ID);
+				statement.setInt(2, HIERARCHY_LOCK_OBJECT_ID);
+				statement.execute();
+			}
+			return null;
+		});
+	}
 
 	/**
 	 * IDs of the units that are direct sub-units of the given unit.
