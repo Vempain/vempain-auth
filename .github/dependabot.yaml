@@ -1,14 +1,21 @@
 version: 2
+
+# vempain-auth publishes to GitHub Packages but consumes only Maven Central dependencies, so no private registry is
+# declared here. The consuming backends declare the maven-github registry in their own dependabot.yaml.
+
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        update-types: [ minor, patch, major ]
+
   - package-ecosystem: "gradle"
     directory: "/"
-    registries: "*"
     schedule:
-      interval: weekly
+      interval: "weekly"
     groups:
       weekly-dependencies:
         applies-to: version-updates
