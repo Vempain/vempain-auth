@@ -30,6 +30,11 @@ class UnitServiceUTC {
 	@Mock
 	private AclRepository  aclRepository;
 
+	@Mock
+	private fi.poltsi.vempain.auth.repository.UserAccountRepository userAccountRepository;
+	@Mock
+	private UnitMembershipService                                   unitMembershipService;
+
 	@InjectMocks
 	private UnitService unitService;
 

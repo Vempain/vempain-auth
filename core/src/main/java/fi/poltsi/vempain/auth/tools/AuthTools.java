@@ -8,6 +8,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public class AuthTools {
+	private static final String SPECIAL_PASSWORD_CHARACTERS = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?";
+
 	public static boolean isUserIdCurrentUser(long userId) {
 		var authentication = getAuthentication();
 
@@ -36,10 +38,20 @@ public class AuthTools {
 			return false;
 		}
 
-		return password.matches(".*[A-Z].*") &&
-			   password.matches(".*[a-z].*") &&
-			   password.matches(".*[0-9].*") &&
-			   password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*");
+		boolean hasUppercase        = false;
+		boolean hasLowercase        = false;
+		boolean hasDigit            = false;
+		boolean hasSpecialCharacter = false;
+
+		for (int index = 0; index < password.length(); index++) {
+			char character = password.charAt(index);
+			hasUppercase |= character >= 'A' && character <= 'Z';
+			hasLowercase |= character >= 'a' && character <= 'z';
+			hasDigit |= character >= '0' && character <= '9';
+			hasSpecialCharacter |= SPECIAL_PASSWORD_CHARACTERS.indexOf(character) >= 0;
+		}
+
+		return hasUppercase && hasLowercase && hasDigit && hasSpecialCharacter;
 	}
 
 	public static String passwordHash(String password) {

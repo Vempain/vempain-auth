@@ -13,6 +13,7 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 import java.time.Instant;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
@@ -45,4 +46,6 @@ public class UserResponse extends AbstractResponse {
 	private String        description;
 	@Schema(description = "Status", example = "ACTIVE")
 	private AccountStatus status;
+	@Schema(description = "IDs of the units the user is a direct member of", example = "[12]")
+	private List<Long> unitIds;
 }

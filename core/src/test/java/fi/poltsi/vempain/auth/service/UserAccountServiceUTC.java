@@ -27,6 +27,9 @@ class UserAccountServiceUTC {
 	@Mock
 	private UserAccountRepository userAccountRepository;
 
+	@Mock
+	private fi.poltsi.vempain.auth.repository.UnitRepository unitRepository;
+
 	@InjectMocks
 	private UserService userService;
 

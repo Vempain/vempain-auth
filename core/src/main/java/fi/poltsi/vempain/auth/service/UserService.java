@@ -1,13 +1,17 @@
 package fi.poltsi.vempain.auth.service;
 
 import fi.poltsi.vempain.auth.api.request.AclRequest;
+import fi.poltsi.vempain.auth.api.request.PagedRequest;
 import fi.poltsi.vempain.auth.api.request.UserRequest;
 import fi.poltsi.vempain.auth.api.response.AclResponse;
+import fi.poltsi.vempain.auth.api.response.PagedResponse;
 import fi.poltsi.vempain.auth.api.response.UserResponse;
 import fi.poltsi.vempain.auth.entity.Acl;
+import fi.poltsi.vempain.auth.entity.Unit;
 import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.exception.VempainAclException;
 import fi.poltsi.vempain.auth.repository.AclRepository;
+import fi.poltsi.vempain.auth.repository.UnitRepository;
 import fi.poltsi.vempain.auth.repository.UserAccountRepository;
 import fi.poltsi.vempain.auth.tools.AuthTools;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +24,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +35,7 @@ import java.util.Optional;
 public class UserService {
 	private final UserAccountRepository userAccountRepository;
 	private final AclRepository  aclRepository;
+	private final UnitRepository unitRepository;
 
 	public Iterable<UserAccount> findAll() {
 		return userAccountRepository.findAll();
@@ -40,9 +47,60 @@ public class UserService {
 
 		if (userResponse != null) {
 			populateWithAcl(optionalUser.get().getAclId(), userResponse);
+			populateWithUnits(optionalUser.get(), userResponse);
 		}
 
 		return userResponse;
+	}
+
+	/**
+	 * Every user with its direct unit memberships (no ACL rows).
+	 */
+	public List<UserResponse> findAllResponses() {
+		var responses = new ArrayList<UserResponse>();
+		userAccountRepository.findAll()
+							 .forEach(user -> {
+								 var response = user.getUserResponse();
+								 populateWithUnits(user, response);
+								 responses.add(response);
+							 });
+		return responses;
+	}
+
+	/**
+	 * A page of users sorted by name (or id with {@code sort_by=id}) and filtered by name or login name through {@code search}.
+	 */
+	public PagedResponse<UserResponse> findPaged(PagedRequest request) {
+		return PagingTools.page(findAllResponses(), request, user -> java.util.Arrays.asList(user.getName(), user.getLoginName()),
+								UserResponse::getName, UserResponse::getId);
+	}
+
+	private void populateWithUnits(UserAccount user, UserResponse userResponse) {
+		userResponse.setUnitIds(user.getUnits() == null ? List.of() : user.getUnits()
+																		  .stream()
+																		  .map(Unit::getId)
+																		  .sorted()
+																		  .toList());
+	}
+
+	/**
+	 * Replaces the direct unit memberships of a user; a null list leaves them untouched.
+	 *
+	 * @throws ResponseStatusException 400 for an unknown unit
+	 */
+	private void applyUnits(UserAccount user, List<Long> unitIds) {
+		if (unitIds == null) {
+			return;
+		}
+		var units = new HashSet<Unit>();
+		for (var unitId : new LinkedHashSet<>(unitIds)) {
+			if (unitId == null) {
+				continue;
+			}
+			units.add(unitRepository.findById(unitId)
+									.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown unit " + unitId)));
+		}
+		user.setUnits(units);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
@@ -80,10 +138,12 @@ public class UserService {
 							  .creator(AuthTools.getCurrentUserId())
 							  .created(Instant.now())
 							  .build();
+		applyUnits(user, userRequest.getUnitIds());
 
 		var newUser = userAccountRepository.save(user);
 		var userResponse = newUser.getUserResponse();
 		populateWithAcl(aclId, userResponse);
+		populateWithUnits(newUser, userResponse);
 		return userResponse;
 	}
 
@@ -126,12 +186,14 @@ public class UserService {
 			user.setPassword(AuthTools.passwordHash(userRequest.getPassword()));
 		}
 
+		applyUnits(user, userRequest.getUnitIds());
 		user.setModifier(AuthTools.getCurrentUserId());
 		user.setModified(Instant.now());
 
 		var newUser = userAccountRepository.save(user);
 		var userResponse = newUser.getUserResponse();
 		populateWithAcl(aclId, userResponse);
+		populateWithUnits(newUser, userResponse);
 		return userResponse;
 	}
 

@@ -50,6 +50,9 @@ class UserServiceExtendedUTC {
 	@Mock
 	private AclRepository         aclRepository;
 
+	@Mock
+	private fi.poltsi.vempain.auth.repository.UnitRepository unitRepository;
+
 	@InjectMocks
 	private UserService userService;
 

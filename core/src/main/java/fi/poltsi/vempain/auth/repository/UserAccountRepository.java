@@ -7,6 +7,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -26,4 +27,9 @@ public interface UserAccountRepository extends CrudRepository<UserAccount, Long>
 	void updateLockedByUserId(@Param("userId") Long userId, @Param("locked") boolean locked);
 
 	Optional<UserAccount> findByAclId(long aclId);
+
+	/**
+	 * The direct user members of a unit.
+	 */
+	List<UserAccount> findByUnits_Id(long unitId);
 }
