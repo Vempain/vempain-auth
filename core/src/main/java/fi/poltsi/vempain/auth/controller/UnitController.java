@@ -30,19 +30,16 @@ public class UnitController implements UnitAPI {
 
 	@Override
 	public ResponseEntity<List<UnitResponse>> getUnits() {
-		administrationGuard.requireAdministrator();
 		return ResponseEntity.ok(unitService.findAllResponses());
 	}
 
 	@Override
 	public ResponseEntity<PagedResponse<UnitResponse>> getPagedUnits(PagedRequest request) {
-		administrationGuard.requireAdministrator();
 		return ResponseEntity.ok(unitService.findPaged(request));
 	}
 
 	@Override
 	public ResponseEntity<UnitResponse> findById(Long unitId) {
-		administrationGuard.requireAdministrator();
 		if (unitId == null || unitId < 0) {
 			log.error("Invalid unit ID: {}", unitId);
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Malformed parameter");

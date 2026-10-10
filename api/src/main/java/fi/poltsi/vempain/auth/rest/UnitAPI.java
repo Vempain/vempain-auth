@@ -28,7 +28,8 @@ import java.util.List;
 /**
  * Unit (user group) management of the service's own user base. Units can contain users and other units (nested); a membership that
  * would make a unit contain itself through any chain is rejected with 400. Served by every service hosting {@code vempain-auth-core};
- * the caller needs the modify privilege on the administrator ACL ({@link Constants#ADMIN_ID}).
+ * Read operations require authentication. Creating and updating units requires the modify privilege on the administrator ACL
+ * ({@link Constants#ADMIN_ID}).
  */
 @Tag(name = "UnitAPI", description = "Unit (user group) management")
 public interface UnitAPI {
@@ -38,8 +39,7 @@ public interface UnitAPI {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Returned a list of units",
 										content = {@Content(array = @ArraySchema(schema = @Schema(implementation = UnitResponse.class)),
 															mediaType = MediaType.APPLICATION_JSON_VALUE)}),
-						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content),
-						   @ApiResponse(responseCode = "403", description = "Administrator access is required", content = @Content)})
+						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content)})
 	@SecurityRequirement(name = "Bearer Authentication")
 	@GetMapping(value = MAIN_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 	ResponseEntity<List<UnitResponse>> getUnits();
@@ -48,8 +48,7 @@ public interface UnitAPI {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Page of units",
 										content = @Content(schema = @Schema(implementation = PagedResponse.class),
 	                                                       mediaType = MediaType.APPLICATION_JSON_VALUE)),
-						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content),
-						   @ApiResponse(responseCode = "403", description = "Administrator access is required", content = @Content)})
+						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content)})
 	@SecurityRequirement(name = "Bearer Authentication")
 	@PostMapping(value = MAIN_PATH + "/paged", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	ResponseEntity<PagedResponse<UnitResponse>> getPagedUnits(@Valid @RequestBody PagedRequest request);
@@ -61,7 +60,6 @@ public interface UnitAPI {
 	                                                        mediaType = MediaType.APPLICATION_JSON_VALUE)}),
 						   @ApiResponse(responseCode = "400", description = "Invalid request issued", content = @Content),
 						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content),
-						   @ApiResponse(responseCode = "403", description = "Administrator access is required", content = @Content),
 						   @ApiResponse(responseCode = "404", description = "Unit not found", content = @Content)})
 	@SecurityRequirement(name = "Bearer Authentication")
 	@GetMapping(value = MAIN_PATH + "/{unit_id}", produces = MediaType.APPLICATION_JSON_VALUE)

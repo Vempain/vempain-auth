@@ -27,7 +27,8 @@ import java.util.List;
 
 /**
  * User account management of the service's own user base. Every service that hosts {@code vempain-auth-core} serves this API; the
- * caller needs the modify privilege on the administrator ACL ({@link Constants#ADMIN_ID}).
+ * Read operations require authentication. Creating and updating users requires the modify privilege on the administrator ACL
+ * ({@link Constants#ADMIN_ID}).
  */
 @Tag(name = "UserAPI", description = "User account management")
 public interface UserAPI {
@@ -37,8 +38,7 @@ public interface UserAPI {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Returned a list of users",
 										content = {@Content(array = @ArraySchema(schema = @Schema(implementation = UserResponse.class)),
 															mediaType = MediaType.APPLICATION_JSON_VALUE)}),
-						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content),
-						   @ApiResponse(responseCode = "403", description = "Administrator access is required", content = @Content)})
+						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content)})
 	@SecurityRequirement(name = "Bearer Authentication")
 	@GetMapping(value = MAIN_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 	ResponseEntity<List<UserResponse>> getUsers();
@@ -47,8 +47,7 @@ public interface UserAPI {
 	@ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Page of users",
 										content = @Content(schema = @Schema(implementation = PagedResponse.class),
 	                                                       mediaType = MediaType.APPLICATION_JSON_VALUE)),
-						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content),
-						   @ApiResponse(responseCode = "403", description = "Administrator access is required", content = @Content)})
+						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content)})
 	@SecurityRequirement(name = "Bearer Authentication")
 	@PostMapping(value = MAIN_PATH + "/paged", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	ResponseEntity<PagedResponse<UserResponse>> getPagedUsers(@Valid @RequestBody PagedRequest request);
@@ -60,7 +59,6 @@ public interface UserAPI {
 	                                                        mediaType = MediaType.APPLICATION_JSON_VALUE)}),
 						   @ApiResponse(responseCode = "400", description = "Invalid request issued", content = @Content),
 						   @ApiResponse(responseCode = "401", description = "Unauthorized access", content = @Content),
-						   @ApiResponse(responseCode = "403", description = "Administrator access is required", content = @Content),
 						   @ApiResponse(responseCode = "404", description = "User not found", content = @Content)})
 	@SecurityRequirement(name = "Bearer Authentication")
 	@GetMapping(value = MAIN_PATH + "/{user_id}", produces = MediaType.APPLICATION_JSON_VALUE)
