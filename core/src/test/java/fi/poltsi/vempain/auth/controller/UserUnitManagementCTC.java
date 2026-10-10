@@ -95,9 +95,22 @@ class UserUnitManagementCTC extends IntegrationTestSetup {
 			   .andExpect(status().isUnauthorized());
 
 		mockMvc.perform(get("/content-management/users").with(plainUser()))
-			   .andExpect(status().isForbidden());
+			   .andExpect(status().isOk());
+		mockMvc.perform(get("/content-management/users/" + ADMIN_ID).with(plainUser()))
+			   .andExpect(status().isOk());
 		mockMvc.perform(get("/content-management/units").with(plainUser()))
-			   .andExpect(status().isForbidden());
+			   .andExpect(status().isOk());
+		var paged = new PagedRequest();
+		paged.setPage(0);
+		paged.setSize(10);
+		mockMvc.perform(post("/content-management/users/paged").with(plainUser())
+															   .contentType(MediaType.APPLICATION_JSON)
+															   .content(objectMapper.writeValueAsString(paged)))
+			   .andExpect(status().isOk());
+		mockMvc.perform(post("/content-management/units/paged").with(plainUser())
+															   .contentType(MediaType.APPLICATION_JSON)
+															   .content(objectMapper.writeValueAsString(paged)))
+			   .andExpect(status().isOk());
 		mockMvc.perform(get("/content-management/acls").with(plainUser()))
 			   .andExpect(status().isForbidden());
 	}
@@ -201,6 +214,9 @@ class UserUnitManagementCTC extends IntegrationTestSetup {
 			   .andExpect(status().isOk())
 			   .andExpect(jsonPath("$.unit_ids[0]").value(inner))
 			   .andExpect(jsonPath("$.acls", hasSize(1)));
+		mockMvc.perform(get("/content-management/units/" + outer).with(plainUser()))
+			   .andExpect(status().isOk())
+			   .andExpect(jsonPath("$.unit_ids[0]").value(inner));
 
 		var paged = new PagedRequest();
 		paged.setPage(0);

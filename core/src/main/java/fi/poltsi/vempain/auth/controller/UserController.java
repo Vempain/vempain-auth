@@ -28,19 +28,16 @@ public class UserController implements UserAPI {
 
 	@Override
 	public ResponseEntity<List<UserResponse>> getUsers() {
-		administrationGuard.requireAdministrator();
 		return ResponseEntity.ok(userService.findAllResponses());
 	}
 
 	@Override
 	public ResponseEntity<PagedResponse<UserResponse>> getPagedUsers(PagedRequest request) {
-		administrationGuard.requireAdministrator();
 		return ResponseEntity.ok(userService.findPaged(request));
 	}
 
 	@Override
 	public ResponseEntity<UserResponse> findById(Long userId) {
-		administrationGuard.requireAdministrator();
 		if (userId == null || userId < 0) {
 			log.error("Invalid user ID: {}", userId);
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Malformed parameter");
