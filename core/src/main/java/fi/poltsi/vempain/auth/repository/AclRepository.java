@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -19,6 +20,9 @@ public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>
 	List<Acl> findAll();
 
 	List<Acl> getAclByAclId(long id);
+
+	@Query("FROM Acl WHERE aclId IN :aclIds")
+	List<Acl> findByAclIdIn(@Param("aclIds") Collection<Long> aclIds);
 
 	@Modifying
 	@Query(value = "UPDATE Acl SET userId = :userId, unitId = :unitId, readPrivilege = :readPriv, modifyPrivilege = :modifyPriv, createPrivilege = :createPriv, deletePrivilege = :deletePriv " +
