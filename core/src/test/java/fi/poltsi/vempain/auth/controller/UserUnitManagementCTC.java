@@ -26,6 +26,7 @@ import java.util.List;
 import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -144,6 +145,12 @@ class UserUnitManagementCTC extends IntegrationTestSetup {
 								 .path("id")
 								 .asLong();
 
+		mockMvc.perform(get("/content-management/users/" + userId).with(plainUser()))
+			   .andExpect(status().isOk())
+			   .andExpect(jsonPath("$.login_name").value("ctc.user"))
+			   .andExpect(jsonPath("$.name").value(nullValue()))
+			   .andExpect(jsonPath("$.unit_ids[0]").value(unitId));
+
 		mockMvc.perform(get("/content-management/users").with(admin()))
 			   .andExpect(status().isOk())
 			   .andExpect(jsonPath("$[?(@.login_name == 'ctc.user')].unit_ids[0]", hasItem((int) unitId)));
@@ -158,6 +165,13 @@ class UserUnitManagementCTC extends IntegrationTestSetup {
 			   .andExpect(status().isOk())
 			   .andExpect(jsonPath("$.total_elements").value(1))
 			   .andExpect(jsonPath("$.content[0].login_name").value("ctc.user"));
+		mockMvc.perform(post("/content-management/users/paged").with(plainUser())
+															   .contentType(MediaType.APPLICATION_JSON)
+															   .content(objectMapper.writeValueAsString(paged)))
+			   .andExpect(status().isOk())
+			   .andExpect(jsonPath("$.content[0].login_name").value("ctc.user"))
+			   .andExpect(jsonPath("$.content[0].name").value(nullValue()))
+			   .andExpect(jsonPath("$.content[0].unit_ids[0]").value(unitId));
 
 		mockMvc.perform(get("/content-management/users/" + userId).with(admin()))
 			   .andExpect(status().isOk())

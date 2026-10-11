@@ -8,6 +8,7 @@ import fi.poltsi.vempain.auth.entity.UserAccount;
 import fi.poltsi.vempain.auth.exception.VempainAclException;
 import fi.poltsi.vempain.auth.repository.AclRepository;
 import fi.poltsi.vempain.auth.repository.UserAccountRepository;
+import fi.poltsi.vempain.auth.security.AclAuthorizationService;
 import fi.poltsi.vempain.auth.tools.TestUTCTools;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +50,8 @@ class UserServiceExtendedUTC {
 	private UserAccountRepository userAccountRepository;
 	@Mock
 	private AclRepository         aclRepository;
+	@Mock
+	private AclAuthorizationService aclAuthorizationService;
 
 	@Mock
 	private fi.poltsi.vempain.auth.repository.UnitRepository unitRepository;
@@ -74,6 +77,7 @@ class UserServiceExtendedUTC {
 		// Long.valueOf() is needed to stub findById(Long) from CrudRepository, not findById(long) from UserAccountRepository
 		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
 		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
+		when(aclAuthorizationService.canRead(1L)).thenReturn(true);
 
 		var response = userService.findUserResponseById(1L);
 		assertNotNull(response);

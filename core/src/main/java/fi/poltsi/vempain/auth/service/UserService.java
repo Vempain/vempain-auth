@@ -13,6 +13,7 @@ import fi.poltsi.vempain.auth.exception.VempainAclException;
 import fi.poltsi.vempain.auth.repository.AclRepository;
 import fi.poltsi.vempain.auth.repository.UnitRepository;
 import fi.poltsi.vempain.auth.repository.UserAccountRepository;
+import fi.poltsi.vempain.auth.security.AclAuthorizationService;
 import fi.poltsi.vempain.auth.tools.AuthTools;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class UserService {
 	private final UserAccountRepository userAccountRepository;
 	private final AclRepository  aclRepository;
 	private final UnitRepository unitRepository;
+	private final AclAuthorizationService aclAuthorizationService;
 
 	public Iterable<UserAccount> findAll() {
 		return userAccountRepository.findAll();
@@ -43,10 +45,10 @@ public class UserService {
 
 	public UserResponse findUserResponseById(Long userId) {
 		var optionalUser = findById(userId);
-		var userResponse = optionalUser.map(UserAccount::getUserResponse).orElse(null);
+		var userResponse = optionalUser.map(this::toResponse)
+		                               .orElse(null);
 
 		if (userResponse != null) {
-			populateWithAcl(optionalUser.get().getAclId(), userResponse);
 			populateWithUnits(optionalUser.get(), userResponse);
 		}
 
@@ -60,11 +62,25 @@ public class UserService {
 		var responses = new ArrayList<UserResponse>();
 		userAccountRepository.findAll()
 							 .forEach(user -> {
-								 var response = user.getUserResponse();
+								 var response = toResponse(user);
 								 populateWithUnits(user, response);
 								 responses.add(response);
 							 });
 		return responses;
+	}
+
+	private UserResponse toResponse(UserAccount user) {
+		if (aclAuthorizationService.canRead(user.getAclId())) {
+			var response = user.getUserResponse();
+			populateWithAcl(user.getAclId(), response);
+			return response;
+		}
+
+		return UserResponse.builder()
+						   .id(user.getId())
+						   .loginName(user.getLoginName())
+						   .unitIds(List.of())
+						   .build();
 	}
 
 	/**
