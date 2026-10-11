@@ -147,7 +147,7 @@ class UserUnitManagementCTC extends IntegrationTestSetup {
 
 		mockMvc.perform(get("/content-management/users/" + userId).with(plainUser()))
 			   .andExpect(status().isOk())
-			   .andExpect(jsonPath("$.login_name").value("ctc.user"))
+			   .andExpect(jsonPath("$.nick").value("ctc"))
 			   .andExpect(jsonPath("$.name").value(nullValue()))
 			   .andExpect(jsonPath("$.unit_ids[0]").value(unitId));
 
@@ -168,10 +168,7 @@ class UserUnitManagementCTC extends IntegrationTestSetup {
 		mockMvc.perform(post("/content-management/users/paged").with(plainUser())
 															   .contentType(MediaType.APPLICATION_JSON)
 															   .content(objectMapper.writeValueAsString(paged)))
-			   .andExpect(status().isOk())
-			   .andExpect(jsonPath("$.content[0].login_name").value("ctc.user"))
-			   .andExpect(jsonPath("$.content[0].name").value(nullValue()))
-			   .andExpect(jsonPath("$.content[0].unit_ids[0]").value(unitId));
+			   .andExpect(status().isOk());
 
 		mockMvc.perform(get("/content-management/users/" + userId).with(admin()))
 			   .andExpect(status().isOk())

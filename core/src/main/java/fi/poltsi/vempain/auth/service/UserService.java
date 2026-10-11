@@ -78,7 +78,7 @@ public class UserService {
 
 		return UserResponse.builder()
 						   .id(user.getId())
-						   .loginName(user.getLoginName())
+						   .nick(user.getNick())
 						   .unitIds(List.of())
 						   .build();
 	}

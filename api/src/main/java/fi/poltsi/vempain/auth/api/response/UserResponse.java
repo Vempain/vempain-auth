@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import fi.poltsi.vempain.auth.api.AccountStatus;
 import fi.poltsi.vempain.auth.api.PrivacyType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -28,6 +29,7 @@ public class UserResponse extends AbstractResponse {
 	@Schema(description = "Full name", example = "Arnold Dunkelswetter")
 	private String        name;
 	@Schema(description = "Nick name", example = "Ahnold")
+	@NotBlank
 	private String        nick;
 	@Schema(description = "Login name", example = "arnold")
 	private String      loginName;
