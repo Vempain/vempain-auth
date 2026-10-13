@@ -6,7 +6,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
+import org.springframework.security.core.context.SecurityContextImpl;
 
 import java.util.Set;
 
@@ -119,5 +122,44 @@ class AuthToolsUTC {
 				Set.of(), null);
 		var auth = new UsernamePasswordAuthenticationToken(userDetails, null);
 		SecurityContextHolder.getContext().setAuthentication(auth);
+	}
+
+
+	// ── missing security context ─────────────────────────────────────────────────
+
+	@Test
+	void missingSecurityContextIsTreatedAsUnauthenticated() {
+		var defaultStrategy = SecurityContextHolder.getContextHolderStrategy();
+		try {
+			SecurityContextHolder.setContextHolderStrategy(new NullContextStrategy());
+
+			assertFalse(AuthTools.isUserIdCurrentUser(1L));
+			assertThrows(VempainAuthenticationException.class, AuthTools::getCurrentUserId);
+		} finally {
+			SecurityContextHolder.setContextHolderStrategy(defaultStrategy);
+		}
+	}
+
+	/**
+	 * A holder strategy without any context, which the default thread-local strategy never produces.
+	 */
+	private static class NullContextStrategy implements SecurityContextHolderStrategy {
+		@Override
+		public void clearContext() {
+		}
+
+		@Override
+		public SecurityContext getContext() {
+			return null;
+		}
+
+		@Override
+		public void setContext(SecurityContext context) {
+		}
+
+		@Override
+		public SecurityContext createEmptyContext() {
+			return new SecurityContextImpl();
+		}
 	}
 }

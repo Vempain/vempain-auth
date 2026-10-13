@@ -6,12 +6,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 class JwtUtilsUTC {
 
@@ -99,5 +108,71 @@ class JwtUtilsUTC {
 		ReflectionTestUtils.setField(jwtUtils, "jwtExpirationMs", -1000L);
 		JwtToken token = jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com");
 		assertFalse(jwtUtils.validateJwtToken(token.getTokenString()));
+	}
+
+
+	@Test
+	void validateJwtTokenUnsecuredTokenReturnsFalse() {
+		// A token without a signature ("alg": "none") is not a signed JWT and is rejected as unsupported
+		var unsecured = io.jsonwebtoken.Jwts.builder()
+											.subject("login")
+											.compact();
+		assertFalse(jwtUtils.validateJwtToken(unsecured));
+	}
+
+	@Test
+	void validateJwtTokenContentTokenReturnsFalse() throws NoSuchAlgorithmException {
+		// A JWS carrying raw content instead of claims, even when signed with the configured secret, is unsupported
+		var key = new SecretKeySpec(MessageDigest.getInstance("SHA-512")
+												 .digest("test-secret".getBytes(StandardCharsets.UTF_8)), "HmacSHA512");
+		var contentToken = io.jsonwebtoken.Jwts.builder()
+											   .content("not claims", "text/plain")
+											   .signWith(key)
+											   .compact();
+		assertFalse(jwtUtils.validateJwtToken(contentToken));
+	}
+
+	@Test
+	void validateJwtTokenWithWeakVerificationKeyReturnsFalse() {
+		JwtToken token = jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com");
+		// Simulate a digest that yields a key far below the 512 bits HS512 requires
+		var shortDigest = mock(MessageDigest.class);
+		when(shortDigest.digest(any(byte[].class))).thenReturn(new byte[8]);
+
+		try (var messageDigest = mockStatic(MessageDigest.class)) {
+			messageDigest.when(() -> MessageDigest.getInstance("SHA-512"))
+						 .thenReturn(shortDigest);
+			assertFalse(jwtUtils.validateJwtToken(token.getTokenString()));
+		}
+	}
+
+	@Test
+	void missingSha512FailsClosed() {
+		try (var messageDigest = mockStatic(MessageDigest.class)) {
+			messageDigest.when(() -> MessageDigest.getInstance("SHA-512"))
+						 .thenThrow(new NoSuchAlgorithmException("SHA-512"));
+
+			var exception = assertThrows(IllegalStateException.class,
+										 () -> jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com"));
+			assertEquals("SHA-512 is not available", exception.getMessage());
+		}
+	}
+
+	@Test
+	void blankSecretRefusesToSign() {
+		ReflectionTestUtils.setField(jwtUtils, "jwtSecret", " ");
+
+		var exception = assertThrows(IllegalStateException.class,
+									 () -> jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com"));
+		assertEquals("The JWT signing secret is not configured", exception.getMessage());
+	}
+
+	@Test
+	void missingSecretRefusesToValidate() {
+		JwtToken token = jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com");
+		ReflectionTestUtils.setField(jwtUtils, "jwtSecret", null);
+
+		// A missing secret is a configuration error, not an invalid token: it is not swallowed into "false"
+		assertThrows(IllegalStateException.class, () -> jwtUtils.validateJwtToken(token.getTokenString()));
 	}
 }
