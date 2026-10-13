@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
@@ -169,5 +171,48 @@ class JsonToolsUTC {
 								  .asString());
 		assertEquals("beta", tags.get(1)
 								 .asString());
+	}
+
+
+	@Test
+	void toJsonWrapsSerializationFailures() {
+		var exception = assertThrows(IllegalStateException.class, () -> JsonTools.toJson(new Unserializable()));
+
+		assertEquals("Failed to serialize object to JSON", exception.getMessage());
+		assertNotNull(exception.getCause());
+	}
+
+	@Test
+	void toJsonIgnoresBlankObscureFieldNames() throws Exception {
+		Map<String, String> payload    = Map.of("secret", "topsecret");
+		var                 jsonString = JsonTools.toJson(payload, java.util.Arrays.asList("", "  ", null));
+		JsonNode            node       = new ObjectMapper().readTree(jsonString);
+
+		assertEquals("topsecret", node.get("secret")
+									  .asString());
+	}
+
+	@Test
+	void toJsonMasksNonTextValuesByTheirJsonText() throws Exception {
+		Map<String, Object> payload    = Map.of("pin", 123456, "flag", true, "nested", Map.of("pin", 42));
+		var                 jsonString = JsonTools.toJson(payload, List.of("pin", "flag"));
+		JsonNode            node       = new ObjectMapper().readTree(jsonString);
+
+		assertEquals("12*56", node.get("pin")
+								  .asString());
+		assertEquals("****", node.get("flag")
+								 .asString());
+		assertEquals("**", node.get("nested")
+							   .get("pin")
+							   .asString());
+	}
+
+	/**
+	 * A bean whose only property can not be read, so serialising it fails.
+	 */
+	public static class Unserializable {
+		public String getBoom() {
+			throw new UnsupportedOperationException("boom");
+		}
 	}
 }

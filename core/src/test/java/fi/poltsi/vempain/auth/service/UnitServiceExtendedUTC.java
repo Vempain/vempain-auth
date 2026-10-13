@@ -1,8 +1,12 @@
 package fi.poltsi.vempain.auth.service;
 
 import fi.poltsi.vempain.auth.api.request.AclRequest;
+import fi.poltsi.vempain.auth.api.request.PagedRequest;
 import fi.poltsi.vempain.auth.api.request.UnitRequest;
+import fi.poltsi.vempain.auth.api.response.UnitResponse;
 import fi.poltsi.vempain.auth.entity.Unit;
+import fi.poltsi.vempain.auth.entity.UserAccount;
+import fi.poltsi.vempain.auth.exception.VempainAclException;
 import fi.poltsi.vempain.auth.repository.AclRepository;
 import fi.poltsi.vempain.auth.repository.UnitRepository;
 import fi.poltsi.vempain.auth.tools.TestUTCTools;
@@ -29,11 +33,14 @@ import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -237,6 +244,99 @@ class UnitServiceExtendedUTC {
 												  .modifyPrivilege(true)
 												  .deletePrivilege(true)
 												  .build()))
+						  .build();
+	}
+
+
+	// ── findPaged ─────────────────────────────────────────────────────────────────
+
+	@Test
+	void findPagedListsUnitsSortedByNameWithTheirMembers() {
+		when(unitRepository.findAll()).thenReturn(List.of(buildUnit(2L, 5L), buildUnit(1L, 6L)));
+		when(userAccountRepository.findByUnits_Id(1L)).thenReturn(List.of(TestUTCTools.generateUser(9L)));
+		when(userAccountRepository.findByUnits_Id(2L)).thenReturn(List.of());
+		when(unitMembershipService.findChildUnitIds(1L)).thenReturn(List.of(2L));
+		when(unitMembershipService.findChildUnitIds(2L)).thenReturn(List.of());
+
+		var response = unitService.findPaged(PagedRequest.builder()
+														 .page(0)
+														 .size(10)
+														 .build());
+
+		assertEquals(2, response.getTotalElements());
+		assertEquals(List.of(1L, 2L), response.getContent()
+											  .stream()
+											  .map(UnitResponse::getId)
+											  .toList());
+		assertEquals(List.of(9L), response.getContent()
+										  .getFirst()
+										  .getUserIds());
+		assertEquals(List.of(2L), response.getContent()
+										  .getFirst()
+										  .getUnitIds());
+	}
+
+	// ── updateMembers: user members ───────────────────────────────────────────────
+
+	@Test
+	void updateMembersWithUsersOfAnUnknownUnitIsNotFound() {
+		when(unitRepository.findById(99L)).thenReturn(Optional.empty());
+
+		var ex = assertThrows(ResponseStatusException.class, () -> unitService.updateMembers(99L, List.of(ADMIN_ID), null));
+
+		assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+		verifyNoInteractions(unitMembershipService);
+	}
+
+	@Test
+	void updateMembersAddsAndRemovesUserMembersThroughTheirAccounts() {
+		var unit  = buildUnit(1L, 5L);
+		var other = buildUnit(2L, 6L);
+		when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
+		// never had a unit, member of another unit, already a member, member that is no longer requested
+		var fresh     = buildUser(10L, null);
+		var elsewhere = buildUser(11L, other);
+		var already   = buildUser(12L, unit);
+		var leaving   = buildUser(13L, unit);
+		when(userAccountRepository.findById(Long.valueOf(10L))).thenReturn(Optional.of(fresh));
+		when(userAccountRepository.findById(Long.valueOf(11L))).thenReturn(Optional.of(elsewhere));
+		when(userAccountRepository.findById(Long.valueOf(12L))).thenReturn(Optional.of(already));
+		when(userAccountRepository.findByUnits_Id(1L)).thenReturn(List.of(already, leaving));
+
+		unitService.updateMembers(1L, List.of(10L, 11L, 12L), null);
+
+		assertEquals(Set.of(unit), fresh.getUnits());
+		assertEquals(Set.of(other, unit), elsewhere.getUnits());
+		assertEquals(Set.of(unit), already.getUnits());
+		assertTrue(leaving.getUnits()
+						  .isEmpty());
+		verify(userAccountRepository).save(fresh);
+		verify(userAccountRepository).save(elsewhere);
+		verify(userAccountRepository).save(leaving);
+		verify(userAccountRepository, never()).save(already);
+		verifyNoInteractions(unitMembershipService);
+	}
+
+	// ── saveAclRequests: ACL id validation ────────────────────────────────────────
+
+	@Test
+	void saveAclRequestsWithInvalidAclIdFails() {
+		var acls = List.of(AclRequest.builder()
+									 .user(ADMIN_ID)
+									 .readPrivilege(true)
+									 .build());
+
+		var exception = assertThrows(VempainAclException.class, () -> unitService.saveAclRequests(0L, acls));
+		assertEquals("New ACL ID is invalid", exception.getMessage());
+		assertThrows(VempainAclException.class, () -> unitService.saveAclRequests(null, acls));
+		verify(aclRepository, never()).save(any());
+	}
+
+	private static UserAccount buildUser(long id, Unit unit) {
+		return UserAccount.builder()
+						  .id(id)
+						  .loginName("user" + id)
+						  .units(unit == null ? null : new java.util.HashSet<>(Set.of(unit)))
 						  .build();
 	}
 }

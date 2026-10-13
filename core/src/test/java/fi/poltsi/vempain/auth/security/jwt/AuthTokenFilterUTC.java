@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -100,5 +101,24 @@ class AuthTokenFilterUTC {
 
 		verify(filterChain).doFilter(request, response);
 		assertNull(SecurityContextHolder.getContext().getAuthentication());
+	}
+
+
+	@Test
+	void doFilterInternalWithUnknownTokenSubjectPassesThroughWithoutAuth() throws Exception {
+		var request = new MockHttpServletRequest();
+		request.addHeader("Authorization", "Bearer valid.but.orphaned");
+		var response = new MockHttpServletResponse();
+
+		when(jwtUtils.validateJwtToken("valid.but.orphaned")).thenReturn(true);
+		when(jwtUtils.getUserNameFromJwtToken("valid.but.orphaned")).thenReturn("ghost");
+		when(userDetailsService.loadUserByUsername("ghost")).thenThrow(new UsernameNotFoundException("User Not Found with username: ghost"));
+
+		// The failure is logged and the request continues unauthenticated; the entry point decides the outcome later in the chain
+		authTokenFilter.doFilterInternal(request, response, filterChain);
+
+		verify(filterChain).doFilter(request, response);
+		assertNull(SecurityContextHolder.getContext()
+		                                .getAuthentication());
 	}
 }

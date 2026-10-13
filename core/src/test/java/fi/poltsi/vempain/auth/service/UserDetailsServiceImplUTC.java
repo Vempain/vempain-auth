@@ -15,6 +15,7 @@ import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class UserDetailsServiceImplUTC {
@@ -84,5 +85,16 @@ class UserDetailsServiceImplUTC {
 
 		assertThrows(UsernameNotFoundException.class,
 				() -> userDetailsServiceImpl.loadUserByUsername("nobody"));
+	}
+
+
+	@Test
+	void effectiveUnitsWithoutDirectUnitsIsEmpty() {
+		org.mockito.Mockito.when(unitMembershipService.findAncestorUnitIds(java.util.List.of()))
+						   .thenReturn(Set.of());
+
+		assertTrue(userDetailsServiceImpl.effectiveUnits(null)
+										 .isEmpty());
+		org.mockito.Mockito.verifyNoInteractions(unitRepository);
 	}
 }

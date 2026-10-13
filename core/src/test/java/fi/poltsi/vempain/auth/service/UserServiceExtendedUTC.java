@@ -40,6 +40,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -324,5 +327,90 @@ class UserServiceExtendedUTC {
 								 .modifyPrivilege(true)
 								 .deletePrivilege(true)
 								 .build());
+	}
+
+
+	// ── unit memberships ──────────────────────────────────────────────────────────
+
+	@Test
+	void findUserResponseByIdListsSortedDirectUnitIds() {
+		var user = buildFullUser(1L, 1L);
+		user.setUnits(new java.util.HashSet<>(List.of(TestUTCTools.generateUnit(5L), TestUTCTools.generateUnit(2L))));
+		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
+		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
+		when(aclAuthorizationService.canRead(1L)).thenReturn(true);
+
+		var response = userService.findUserResponseById(1L);
+
+		assertEquals(List.of(2L, 5L), response.getUnitIds());
+	}
+
+	@Test
+	void findUserResponseByIdWithoutAnyUnitSetHasNoUnitIds() {
+		var user = buildFullUser(1L, 1L);
+		user.setUnits(null);
+		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
+		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
+		when(aclAuthorizationService.canRead(1L)).thenReturn(true);
+
+		var response = userService.findUserResponseById(1L);
+
+		assertEquals(List.of(), response.getUnitIds());
+	}
+
+	@Test
+	void createUserAppliesRequestedUnitsSkippingNullAndDuplicateIds() {
+		setSecurityContext(ADMIN_ID);
+		var unit = TestUTCTools.generateUnit(3L);
+		var req  = buildUserRequest("ValidPass1!", ADMIN_ID);
+		req.setUnitIds(java.util.Arrays.asList(null, 3L, 3L));
+		when(aclRepository.getNextAclId()).thenReturn(1L);
+		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+		when(unitRepository.findById(Long.valueOf(3L))).thenReturn(Optional.of(unit));
+		when(userAccountRepository.save(any())).thenAnswer(a -> {
+			UserAccount saved = a.getArgument(0);
+			saved.setId(1L);
+			return saved;
+		});
+
+		var response = userService.createUser(req);
+
+		assertEquals(List.of(3L), response.getUnitIds());
+		verify(unitRepository, times(1)).findById(Long.valueOf(3L));
+	}
+
+	@Test
+	void createUserWithUnknownUnitIsRejected() {
+		setSecurityContext(ADMIN_ID);
+		var req = buildUserRequest("ValidPass1!", ADMIN_ID);
+		req.setUnitIds(List.of(99L));
+		when(aclRepository.getNextAclId()).thenReturn(1L);
+		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+		when(unitRepository.findById(Long.valueOf(99L))).thenReturn(Optional.empty());
+
+		var ex = assertThrows(ResponseStatusException.class, () -> userService.createUser(req));
+
+		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+		assertEquals("Unknown unit 99", ex.getReason());
+		verify(userAccountRepository, never()).save(any());
+	}
+
+	// ── updateUser: password policy ───────────────────────────────────────────────
+
+	@Test
+	void updateUserWithWeakPasswordIsRejected() {
+		setSecurityContext(ADMIN_ID);
+		var existingUser = buildFullUser(1L, 5L);
+		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(existingUser));
+		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+
+		var ex = assertThrows(ResponseStatusException.class, () -> userService.updateUser(1L, buildUserRequest("weak", ADMIN_ID)));
+
+		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+		assertEquals("Password is not valid", ex.getReason());
+		verify(userAccountRepository, never()).save(any());
 	}
 }

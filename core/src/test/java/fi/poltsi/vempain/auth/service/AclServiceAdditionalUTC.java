@@ -1,5 +1,6 @@
 package fi.poltsi.vempain.auth.service;
 
+import fi.poltsi.vempain.auth.api.request.AclRequest;
 import fi.poltsi.vempain.auth.entity.Acl;
 import fi.poltsi.vempain.auth.entity.Unit;
 import fi.poltsi.vempain.auth.exception.VempainAbstractException;
@@ -16,6 +17,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -32,6 +35,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -346,5 +352,105 @@ class AclServiceAdditionalUTC {
 		}
 
 		return builder.build();
+	}
+
+
+	// ── updateFromRequestList ────────────────────────────────────────────────────
+
+	@Test
+	void updateFromRequestListAllocatesAnAclIdForNewRequests() throws VempainAclException {
+		var requests = List.of(aclRequest(0L, ADMIN_ID, null), aclRequest(0L, null, 7L));
+		when(aclRepository.getNextAclId()).thenReturn(50L);
+		when(aclRepository.getAclByAclId(50L)).thenReturn(List.of());
+		when(userAccountRepository.findById(ADMIN_ID)).thenReturn(Optional.of(TestUTCTools.generateUser(ADMIN_ID)));
+		when(unitRepository.findById(7L)).thenReturn(Optional.of(TestUTCTools.generateUnit(7L)));
+		when(aclRepository.save(any(Acl.class))).thenAnswer(a -> a.getArgument(0));
+
+		aclService.updateFromRequestList(requests);
+
+		assertTrue(requests.stream()
+						   .allMatch(request -> request.getAclId() == 50L));
+		verify(aclRepository, never()).deleteAclsByAclId(anyLong());
+		verify(aclRepository, times(2)).save(any(Acl.class));
+	}
+
+	// ── saveAclRequests ──────────────────────────────────────────────────────────
+
+	@Test
+	void saveAclRequestsReplacesExistingRows() throws VempainAclException {
+		var existing = TestUTCTools.generateAcl(1L, 5L, ADMIN_ID, null);
+		when(aclRepository.getAclByAclId(5L)).thenReturn(List.of(existing));
+		when(userAccountRepository.findById(ADMIN_ID)).thenReturn(Optional.of(TestUTCTools.generateUser(ADMIN_ID)));
+		when(aclRepository.save(any(Acl.class))).thenAnswer(a -> a.getArgument(0));
+
+		aclService.saveAclRequests(5L, List.of(aclRequest(5L, ADMIN_ID, null)));
+
+		verify(aclRepository).deleteAclsByAclId(5L);
+		verify(aclRepository).save(any(Acl.class));
+	}
+
+	@Test
+	void saveAclRequestsToleratesRowsVanishingBeforeDeletion() throws VempainAclException {
+		var existing = TestUTCTools.generateAcl(1L, 5L, ADMIN_ID, null);
+		// The rows exist when checked but are gone when the deletion looks them up again
+		when(aclRepository.getAclByAclId(5L)).thenReturn(List.of(existing))
+											 .thenReturn(List.of());
+		when(userAccountRepository.findById(ADMIN_ID)).thenReturn(Optional.of(TestUTCTools.generateUser(ADMIN_ID)));
+		when(aclRepository.save(any(Acl.class))).thenAnswer(a -> a.getArgument(0));
+
+		aclService.saveAclRequests(5L, List.of(aclRequest(5L, ADMIN_ID, null)));
+
+		verify(aclRepository, never()).deleteAclsByAclId(anyLong());
+		verify(aclRepository).save(any(Acl.class));
+	}
+
+	// ── save: the user or unit must exist ────────────────────────────────────────
+
+	@Test
+	void saveWithUnknownUserFails() {
+		when(userAccountRepository.findById(Long.valueOf(99L))).thenReturn(Optional.empty());
+		var acl = TestUTCTools.generateAcl(null, 5L, 99L, null);
+
+		var exception = assertThrows(VempainAclException.class, () -> aclService.save(acl));
+
+		assertEquals("Invalid user ID given in the ACL", exception.getMessage());
+		verify(aclRepository, never()).save(any(Acl.class));
+	}
+
+	@Test
+	void saveWithUnknownUnitFails() {
+		when(unitRepository.findById(99L)).thenReturn(Optional.empty());
+		var acl = TestUTCTools.generateAcl(null, 5L, null, 99L);
+
+		var exception = assertThrows(VempainAclException.class, () -> aclService.save(acl));
+
+		assertEquals("Invalid unit ID given in the ACL", exception.getMessage());
+		verify(aclRepository, never()).save(any(Acl.class));
+	}
+
+	// ── saveNewAclForObject ──────────────────────────────────────────────────────
+
+	@Test
+	void saveNewAclForObjectMapsAnAlreadyExistingAclIdToBadRequest() {
+		when(aclRepository.getNextAclId()).thenReturn(5L);
+		when(aclRepository.getAclByAclId(5L)).thenThrow(new IllegalStateException("Trying to save an ACL ID that already exists"));
+		var requests = List.of(aclRequest(0L, ADMIN_ID, null));
+
+		var exception = assertThrows(ResponseStatusException.class, () -> aclService.saveNewAclForObject(requests));
+
+		assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+		assertEquals("Request contains already existing ACL ID", exception.getReason());
+	}
+
+	private static AclRequest aclRequest(long aclId, Long userId, Long unitId) {
+		return AclRequest.builder()
+						 .aclId(aclId)
+						 .user(userId)
+						 .unit(unitId)
+						 .readPrivilege(true)
+						 .createPrivilege(true)
+						 .modifyPrivilege(true)
+						 .deletePrivilege(true)
+						 .build();
 	}
 }
