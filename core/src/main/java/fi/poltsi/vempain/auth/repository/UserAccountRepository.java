@@ -1,35 +1,37 @@
 package fi.poltsi.vempain.auth.repository;
 
-import fi.poltsi.vempain.auth.entity.UserAccount;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import fi.poltsi.vempain.auth.entity.UserAccount;
 
 @Repository
 public interface UserAccountRepository extends CrudRepository<UserAccount, Long> {
-	Optional<UserAccount> findByName(String name);
 
-	Optional<UserAccount> findByLoginName(String loginName);
+    Optional<UserAccount> findByName(String name);
 
-	Optional<UserAccount> findById(long id);
+    Optional<UserAccount> findByLoginName(String loginName);
 
-	@Modifying
-	@Query(value = "UPDATE UserAccount SET locked = true WHERE id = :id")
-	void lockByUserId(@Param("id") long id);
+    Optional<UserAccount> findById(long id);
 
-	@Modifying
-	@Query(value = "UPDATE UserAccount SET locked = :locked WHERE id = :userId")
-	void updateLockedByUserId(@Param("userId") Long userId, @Param("locked") boolean locked);
+    @Modifying
+    @Query(value = "UPDATE UserAccount SET locked = true WHERE id = :id")
+    void lockByUserId(@Param("id") long id);
 
-	Optional<UserAccount> findByAclId(long aclId);
+    @Modifying
+    @Query(value = "UPDATE UserAccount SET locked = :locked WHERE id = :userId")
+    void updateLockedByUserId(@Param("userId") Long userId, @Param("locked") boolean locked);
 
-	/**
-	 * The direct user members of a unit.
-	 */
-	List<UserAccount> findByUnits_Id(long unitId);
+    Optional<UserAccount> findByAclId(long aclId);
+
+    /**
+     * The direct user members of a unit.
+     */
+    List<UserAccount> findByUnitsId(long unitId);
 }

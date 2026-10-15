@@ -1,8 +1,5 @@
 package fi.poltsi.vempain.auth.controller;
 
-import fi.poltsi.vempain.auth.api.response.UserResponse;
-import fi.poltsi.vempain.auth.security.AdministrationGuard;
-import fi.poltsi.vempain.auth.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -10,6 +7,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+
+import fi.poltsi.vempain.auth.api.response.UserResponse;
+import fi.poltsi.vempain.auth.security.AdministrationGuard;
+import fi.poltsi.vempain.auth.service.UserService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -21,52 +22,53 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class UserControllerUTC {
-	@Mock
-	private UserService         userService;
-	@Mock
-	private AdministrationGuard administrationGuard;
 
-	@InjectMocks
-	private UserController userController;
+    @Mock
+    private UserService userService;
+    @Mock
+    private AdministrationGuard administrationGuard;
 
-	@Test
-	void negativeUserIdIsBadRequest() {
-		var exception = assertThrows(ResponseStatusException.class, () -> userController.findById(-1L));
+    @InjectMocks
+    private UserController userController;
 
-		assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-		assertEquals("Malformed parameter", exception.getReason());
-		verifyNoInteractions(userService);
-	}
+    @Test
+    void negativeUserIdIsBadRequest() {
+        var exception = assertThrows(ResponseStatusException.class, () -> userController.findById(-1L));
 
-	@Test
-	void missingUserIdIsBadRequest() {
-		var exception = assertThrows(ResponseStatusException.class, () -> userController.findById(null));
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertEquals("Malformed parameter", exception.getReason());
+        verifyNoInteractions(userService);
+    }
 
-		assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
-		verifyNoInteractions(userService);
-	}
+    @Test
+    void missingUserIdIsBadRequest() {
+        var exception = assertThrows(ResponseStatusException.class, () -> userController.findById(null));
 
-	@Test
-	void unknownUserIsNotFound() {
-		when(userService.findUserResponseById(42L)).thenReturn(null);
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        verifyNoInteractions(userService);
+    }
 
-		var exception = assertThrows(ResponseStatusException.class, () -> userController.findById(42L));
+    @Test
+    void unknownUserIsNotFound() {
+        when(userService.findUserResponseById(42L)).thenReturn(null);
 
-		assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
-		assertEquals("No user was found with given ID", exception.getReason());
-	}
+        var exception = assertThrows(ResponseStatusException.class, () -> userController.findById(42L));
 
-	@Test
-	void existingUserIsReturned() {
-		var user = UserResponse.builder()
-							   .id(7L)
-							   .nick("seven")
-							   .build();
-		when(userService.findUserResponseById(7L)).thenReturn(user);
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("No user was found with given ID", exception.getReason());
+    }
 
-		var response = userController.findById(7L);
+    @Test
+    void existingUserIsReturned() {
+        var user = UserResponse.builder()
+            .id(7L)
+            .nick("seven")
+            .build();
+        when(userService.findUserResponseById(7L)).thenReturn(user);
 
-		assertEquals(HttpStatus.OK, response.getStatusCode());
-		assertEquals(user, response.getBody());
-	}
+        var response = userController.findById(7L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(user, response.getBody());
+    }
 }

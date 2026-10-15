@@ -1,15 +1,10 @@
 package fi.poltsi.vempain.auth.service;
 
-import fi.poltsi.vempain.auth.api.request.AclRequest;
-import fi.poltsi.vempain.auth.api.request.PagedRequest;
-import fi.poltsi.vempain.auth.api.request.UnitRequest;
-import fi.poltsi.vempain.auth.api.response.UnitResponse;
-import fi.poltsi.vempain.auth.entity.Unit;
-import fi.poltsi.vempain.auth.entity.UserAccount;
-import fi.poltsi.vempain.auth.exception.VempainAclException;
-import fi.poltsi.vempain.auth.repository.AclRepository;
-import fi.poltsi.vempain.auth.repository.UnitRepository;
-import fi.poltsi.vempain.auth.tools.TestUTCTools;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,10 +19,16 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import fi.poltsi.vempain.auth.api.request.AclRequest;
+import fi.poltsi.vempain.auth.api.request.PagedRequest;
+import fi.poltsi.vempain.auth.api.request.UnitRequest;
+import fi.poltsi.vempain.auth.api.response.UnitResponse;
+import fi.poltsi.vempain.auth.entity.Unit;
+import fi.poltsi.vempain.auth.entity.UserAccount;
+import fi.poltsi.vempain.auth.exception.VempainAclException;
+import fi.poltsi.vempain.auth.repository.AclRepository;
+import fi.poltsi.vempain.auth.repository.UnitRepository;
+import fi.poltsi.vempain.auth.tools.TestUTCTools;
 
 import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,296 +48,299 @@ import static org.mockito.Mockito.when;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class UnitServiceExtendedUTC {
 
-	@Mock
-	private UnitRepository unitRepository;
-	@Mock
-	private AclRepository  aclRepository;
+    @Mock
+    private UnitRepository unitRepository;
+    @Mock
+    private AclRepository aclRepository;
 
-	@Mock
-	private fi.poltsi.vempain.auth.repository.UserAccountRepository userAccountRepository;
-	@Mock
-	private UnitMembershipService                                   unitMembershipService;
+    @Mock
+    private fi.poltsi.vempain.auth.repository.UserAccountRepository userAccountRepository;
+    @Mock
+    private UnitMembershipService unitMembershipService;
 
-	@InjectMocks
-	private UnitService unitService;
+    @InjectMocks
+    private UnitService unitService;
 
-	@BeforeEach
-	void setUp() {
-		SecurityContextHolder.clearContext();
-	}
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.clearContext();
+    }
 
-	@AfterEach
-	void tearDown() {
-		SecurityContextHolder.clearContext();
-	}
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
 
-	// ── findById – not found ──────────────────────────────────────────────────────
+    // ── findById – not found ──────────────────────────────────────────────────────
 
-	@Test
-	void findByIdNotFoundThrows() {
-		when(unitRepository.findById(99L)).thenReturn(Optional.empty());
+    @Test
+    void findByIdNotFoundThrows() {
+        when(unitRepository.findById(99L)).thenReturn(Optional.empty());
 
-		assertThrows(Exception.class, () -> unitService.findById(99L));
-	}
+        assertThrows(Exception.class, () -> unitService.findById(99L));
+    }
 
-	// ── deleteById – unit found ───────────────────────────────────────────────────
+    // ── deleteById – unit found ───────────────────────────────────────────────────
 
-	@Test
-	void deleteByIdUnitFoundOk() {
-		var unit = buildUnit(1L, 5L);
-		when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
-		doNothing().when(aclRepository).deleteAclsByAclId(5L);
-		doNothing().when(aclRepository).deleteAllByUnitId(1L);
-		doNothing().when(unitRepository).delete(unit);
+    @Test
+    void deleteByIdUnitFoundOk() {
+        var unit = buildUnit(1L, 5L);
+        when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
+        doNothing().when(aclRepository)
+            .deleteAclsByAclId(5L);
+        doNothing().when(aclRepository)
+            .deleteAllByUnitId(1L);
+        doNothing().when(unitRepository)
+            .delete(unit);
 
-		try {
-			unitService.deleteById(1L);
-		} catch (Exception e) {
-			fail("Should not throw: " + e.getMessage());
-		}
+        try {
+            unitService.deleteById(1L);
+        } catch (Exception e) {
+            fail("Should not throw: " + e.getMessage());
+        }
 
-		verify(aclRepository).deleteAclsByAclId(5L);
-		verify(aclRepository).deleteAllByUnitId(1L);
-		verify(unitRepository).delete(unit);
-	}
+        verify(aclRepository).deleteAclsByAclId(5L);
+        verify(aclRepository).deleteAllByUnitId(1L);
+        verify(unitRepository).delete(unit);
+    }
 
-	// ── save ──────────────────────────────────────────────────────────────────────
+    // ── save ──────────────────────────────────────────────────────────────────────
 
-	@Test
-	void saveUnitOk() {
-		var unit = buildUnit(1L, 5L);
-		when(unitRepository.save(unit)).thenReturn(unit);
+    @Test
+    void saveUnitOk() {
+        var unit = buildUnit(1L, 5L);
+        when(unitRepository.save(unit)).thenReturn(unit);
 
-		var result = unitService.save(unit);
-		assertEquals(unit, result);
-	}
+        var result = unitService.save(unit);
+        assertEquals(unit, result);
+    }
 
-	// ── createUnit ────────────────────────────────────────────────────────────────
+    // ── createUnit ────────────────────────────────────────────────────────────────
 
-	@Test
-	void createUnitOk() {
-		setSecurityContext(ADMIN_ID);
+    @Test
+    void createUnitOk() {
+        setSecurityContext(ADMIN_ID);
 
-		var savedUnit = buildUnit(1L, 1L);
-		when(aclRepository.getNextAclId()).thenReturn(1L);
-		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-		when(unitRepository.save(any())).thenReturn(savedUnit);
+        var savedUnit = buildUnit(1L, 1L);
+        when(aclRepository.getNextAclId()).thenReturn(1L);
+        when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+        when(unitRepository.save(any())).thenReturn(savedUnit);
 
-		var req      = buildUnitRequest(1L, ADMIN_ID, null);
-		var response = unitService.createUnit(req);
-		assertNotNull(response);
-	}
+        var req = buildUnitRequest(1L, ADMIN_ID, null);
+        var response = unitService.createUnit(req);
+        assertNotNull(response);
+    }
 
-	@Test
-	void createUnitBadAclThrows() {
-		setSecurityContext(ADMIN_ID);
+    @Test
+    void createUnitBadAclThrows() {
+        setSecurityContext(ADMIN_ID);
 
-		when(aclRepository.getNextAclId()).thenReturn(1L);
+        when(aclRepository.getNextAclId()).thenReturn(1L);
 
-		// empty acl list → VempainAclException → ResponseStatusException
-		var req = UnitRequest.builder()
-							 .name("TestUnit")
-							 .description("A unit")
-							 .acls(new ArrayList<>())
-							 .build();
+        // empty acl list → VempainAclException → ResponseStatusException
+        var req = UnitRequest.builder()
+            .name("TestUnit")
+            .description("A unit")
+            .acls(new ArrayList<>())
+            .build();
 
-		var ex = assertThrows(ResponseStatusException.class, () -> unitService.createUnit(req));
-		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-	}
+        var ex = assertThrows(ResponseStatusException.class, () -> unitService.createUnit(req));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    }
 
-	// ── updateUnit ────────────────────────────────────────────────────────────────
+    // ── updateUnit ────────────────────────────────────────────────────────────────
 
-	@Test
-	void updateUnitOk() {
-		setSecurityContext(ADMIN_ID);
+    @Test
+    void updateUnitOk() {
+        setSecurityContext(ADMIN_ID);
 
-		var existingUnit = buildUnit(1L, 5L);
-		when(unitRepository.findById(1L)).thenReturn(Optional.of(existingUnit));
-		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-		when(unitRepository.save(any())).thenReturn(existingUnit);
+        var existingUnit = buildUnit(1L, 5L);
+        when(unitRepository.findById(1L)).thenReturn(Optional.of(existingUnit));
+        when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+        when(unitRepository.save(any())).thenReturn(existingUnit);
 
-		var req      = buildUnitRequest(5L, ADMIN_ID, null);
-		var response = unitService.updateUnit(1L, req);
-		assertNotNull(response);
-	}
+        var req = buildUnitRequest(5L, ADMIN_ID, null);
+        var response = unitService.updateUnit(1L, req);
+        assertNotNull(response);
+    }
 
-	@Test
-	void updateUnitNotFoundThrows() {
-		when(unitRepository.findById(99L)).thenReturn(Optional.empty());
+    @Test
+    void updateUnitNotFoundThrows() {
+        when(unitRepository.findById(99L)).thenReturn(Optional.empty());
 
-		var req = buildUnitRequest(1L, ADMIN_ID, null);
-		var ex  = assertThrows(ResponseStatusException.class, () -> unitService.updateUnit(99L, req));
-		assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-	}
+        var req = buildUnitRequest(1L, ADMIN_ID, null);
+        var ex = assertThrows(ResponseStatusException.class, () -> unitService.updateUnit(99L, req));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
 
-	@Test
-	void updateUnitBadAclThrows() {
-		setSecurityContext(ADMIN_ID);
+    @Test
+    void updateUnitBadAclThrows() {
+        setSecurityContext(ADMIN_ID);
 
-		var existingUnit = buildUnit(1L, 5L);
-		when(unitRepository.findById(1L)).thenReturn(Optional.of(existingUnit));
+        var existingUnit = buildUnit(1L, 5L);
+        when(unitRepository.findById(1L)).thenReturn(Optional.of(existingUnit));
 
-		// empty acl list → VempainAclException → ResponseStatusException
-		var req = UnitRequest.builder()
-							 .name("UpdatedUnit")
-							 .acls(new ArrayList<>())
-							 .build();
+        // empty acl list → VempainAclException → ResponseStatusException
+        var req = UnitRequest.builder()
+            .name("UpdatedUnit")
+            .acls(new ArrayList<>())
+            .build();
 
-		var ex = assertThrows(ResponseStatusException.class, () -> unitService.updateUnit(1L, req));
-		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-	}
+        var ex = assertThrows(ResponseStatusException.class, () -> unitService.updateUnit(1L, req));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    }
 
-	// ── saveAclRequests ───────────────────────────────────────────────────────────
+    // ── saveAclRequests ───────────────────────────────────────────────────────────
 
-	@Test
-	void saveAclRequestsReplacesExistingOk() {
-		var existingAcl  = TestUTCTools.generateAcl(1L, 1L, ADMIN_ID, null);
-		var aclRequestList = List.of(AclRequest.builder()
-											   .aclId(1L)
-											   .user(ADMIN_ID)
-											   .unit(null)
-											   .readPrivilege(true)
-											   .createPrivilege(true)
-											   .modifyPrivilege(true)
-											   .deletePrivilege(true)
-											   .build());
-		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of(existingAcl));
-		doNothing().when(aclRepository).deleteAclsByAclId(1L);
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+    @Test
+    void saveAclRequestsReplacesExistingOk() {
+        var existingAcl = TestUTCTools.generateAcl(1L, 1L, ADMIN_ID, null);
+        var aclRequestList = List.of(AclRequest.builder()
+            .aclId(1L)
+            .user(ADMIN_ID)
+            .unit(null)
+            .readPrivilege(true)
+            .createPrivilege(true)
+            .modifyPrivilege(true)
+            .deletePrivilege(true)
+            .build());
+        when(aclRepository.getAclByAclId(1L)).thenReturn(List.of(existingAcl));
+        doNothing().when(aclRepository)
+            .deleteAclsByAclId(1L);
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
 
-		try {
-			unitService.saveAclRequests(1L, aclRequestList);
-		} catch (Exception e) {
-			fail("Should not throw: " + e.getMessage());
-		}
-	}
+        try {
+            unitService.saveAclRequests(1L, aclRequestList);
+        } catch (Exception e) {
+            fail("Should not throw: " + e.getMessage());
+        }
+    }
 
-	// ── helpers ───────────────────────────────────────────────────────────────────
+    // ── helpers ───────────────────────────────────────────────────────────────────
 
-	private void setSecurityContext(long userId) {
-		var userDetails = new UserDetailsImpl(userId, "login", "nick", "email@test.com",
-				"password", Set.of(), null);
-		var auth = new UsernamePasswordAuthenticationToken(userDetails, null);
-		SecurityContextHolder.getContext().setAuthentication(auth);
-	}
+    private void setSecurityContext(long userId) {
+        var userDetails = new UserDetailsImpl(userId, "login", "nick", "email@test.com", "password", Set.of(), null);
+        var auth = new UsernamePasswordAuthenticationToken(userDetails, null);
+        SecurityContextHolder.getContext()
+            .setAuthentication(auth);
+    }
 
-	private Unit buildUnit(long id, long aclId) {
-		return Unit.builder()
-				   .id(id)
-				   .aclId(aclId)
-				   .name("Unit " + id)
-				   .description("Test unit " + id)
-				   .build();
-	}
+    private Unit buildUnit(long id, long aclId) {
+        return Unit.builder()
+            .id(id)
+            .aclId(aclId)
+            .name("Unit " + id)
+            .description("Test unit " + id)
+            .build();
+    }
 
-	private UnitRequest buildUnitRequest(long aclId, Long userId, Long unitId) {
-		return UnitRequest.builder()
-						  .name("TestUnit")
-						  .description("A unit")
-						  .acls(List.of(AclRequest.builder()
-												  .aclId(aclId)
-												  .user(userId)
-												  .unit(unitId)
-												  .readPrivilege(true)
-												  .createPrivilege(true)
-												  .modifyPrivilege(true)
-												  .deletePrivilege(true)
-												  .build()))
-						  .build();
-	}
+    private UnitRequest buildUnitRequest(long aclId, Long userId, Long unitId) {
+        return UnitRequest.builder()
+            .name("TestUnit")
+            .description("A unit")
+            .acls(List.of(AclRequest.builder()
+                .aclId(aclId)
+                .user(userId)
+                .unit(unitId)
+                .readPrivilege(true)
+                .createPrivilege(true)
+                .modifyPrivilege(true)
+                .deletePrivilege(true)
+                .build()))
+            .build();
+    }
 
+    // ── findPaged ─────────────────────────────────────────────────────────────────
 
-	// ── findPaged ─────────────────────────────────────────────────────────────────
+    @Test
+    void findPagedListsUnitsSortedByNameWithTheirMembers() {
+        when(unitRepository.findAll()).thenReturn(List.of(buildUnit(2L, 5L), buildUnit(1L, 6L)));
+        when(userAccountRepository.findByUnitsId(1L)).thenReturn(List.of(TestUTCTools.generateUser(9L)));
+        when(userAccountRepository.findByUnitsId(2L)).thenReturn(List.of());
+        when(unitMembershipService.findChildUnitIds(1L)).thenReturn(List.of(2L));
+        when(unitMembershipService.findChildUnitIds(2L)).thenReturn(List.of());
 
-	@Test
-	void findPagedListsUnitsSortedByNameWithTheirMembers() {
-		when(unitRepository.findAll()).thenReturn(List.of(buildUnit(2L, 5L), buildUnit(1L, 6L)));
-		when(userAccountRepository.findByUnits_Id(1L)).thenReturn(List.of(TestUTCTools.generateUser(9L)));
-		when(userAccountRepository.findByUnits_Id(2L)).thenReturn(List.of());
-		when(unitMembershipService.findChildUnitIds(1L)).thenReturn(List.of(2L));
-		when(unitMembershipService.findChildUnitIds(2L)).thenReturn(List.of());
+        var response = unitService.findPaged(PagedRequest.builder()
+            .page(0)
+            .size(10)
+            .build());
 
-		var response = unitService.findPaged(PagedRequest.builder()
-														 .page(0)
-														 .size(10)
-														 .build());
+        assertEquals(2, response.getTotalElements());
+        assertEquals(List.of(1L, 2L), response.getContent()
+            .stream()
+            .map(UnitResponse::getId)
+            .toList());
+        assertEquals(List.of(9L), response.getContent()
+            .getFirst()
+            .getUserIds());
+        assertEquals(List.of(2L), response.getContent()
+            .getFirst()
+            .getUnitIds());
+    }
 
-		assertEquals(2, response.getTotalElements());
-		assertEquals(List.of(1L, 2L), response.getContent()
-											  .stream()
-											  .map(UnitResponse::getId)
-											  .toList());
-		assertEquals(List.of(9L), response.getContent()
-										  .getFirst()
-										  .getUserIds());
-		assertEquals(List.of(2L), response.getContent()
-										  .getFirst()
-										  .getUnitIds());
-	}
+    // ── updateMembers: user members ───────────────────────────────────────────────
 
-	// ── updateMembers: user members ───────────────────────────────────────────────
+    @Test
+    void updateMembersWithUsersOfAnUnknownUnitIsNotFound() {
+        when(unitRepository.findById(99L)).thenReturn(Optional.empty());
 
-	@Test
-	void updateMembersWithUsersOfAnUnknownUnitIsNotFound() {
-		when(unitRepository.findById(99L)).thenReturn(Optional.empty());
+        var ex = assertThrows(ResponseStatusException.class, () -> unitService.updateMembers(99L, List.of(ADMIN_ID), null));
 
-		var ex = assertThrows(ResponseStatusException.class, () -> unitService.updateMembers(99L, List.of(ADMIN_ID), null));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        verifyNoInteractions(unitMembershipService);
+    }
 
-		assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-		verifyNoInteractions(unitMembershipService);
-	}
+    @Test
+    void updateMembersAddsAndRemovesUserMembersThroughTheirAccounts() {
+        var unit = buildUnit(1L, 5L);
+        var other = buildUnit(2L, 6L);
+        when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
+        // never had a unit, member of another unit, already a member, member that is no longer requested
+        var fresh = buildUser(10L, null);
+        var elsewhere = buildUser(11L, other);
+        var already = buildUser(12L, unit);
+        var leaving = buildUser(13L, unit);
+        when(userAccountRepository.findById(Long.valueOf(10L))).thenReturn(Optional.of(fresh));
+        when(userAccountRepository.findById(Long.valueOf(11L))).thenReturn(Optional.of(elsewhere));
+        when(userAccountRepository.findById(Long.valueOf(12L))).thenReturn(Optional.of(already));
+        when(userAccountRepository.findByUnitsId(1L)).thenReturn(List.of(already, leaving));
 
-	@Test
-	void updateMembersAddsAndRemovesUserMembersThroughTheirAccounts() {
-		var unit  = buildUnit(1L, 5L);
-		var other = buildUnit(2L, 6L);
-		when(unitRepository.findById(1L)).thenReturn(Optional.of(unit));
-		// never had a unit, member of another unit, already a member, member that is no longer requested
-		var fresh     = buildUser(10L, null);
-		var elsewhere = buildUser(11L, other);
-		var already   = buildUser(12L, unit);
-		var leaving   = buildUser(13L, unit);
-		when(userAccountRepository.findById(Long.valueOf(10L))).thenReturn(Optional.of(fresh));
-		when(userAccountRepository.findById(Long.valueOf(11L))).thenReturn(Optional.of(elsewhere));
-		when(userAccountRepository.findById(Long.valueOf(12L))).thenReturn(Optional.of(already));
-		when(userAccountRepository.findByUnits_Id(1L)).thenReturn(List.of(already, leaving));
+        unitService.updateMembers(1L, List.of(10L, 11L, 12L), null);
 
-		unitService.updateMembers(1L, List.of(10L, 11L, 12L), null);
+        assertEquals(Set.of(unit), fresh.getUnits());
+        assertEquals(Set.of(other, unit), elsewhere.getUnits());
+        assertEquals(Set.of(unit), already.getUnits());
+        assertTrue(leaving.getUnits()
+            .isEmpty());
+        verify(userAccountRepository).save(fresh);
+        verify(userAccountRepository).save(elsewhere);
+        verify(userAccountRepository).save(leaving);
+        verify(userAccountRepository, never()).save(already);
+        verifyNoInteractions(unitMembershipService);
+    }
 
-		assertEquals(Set.of(unit), fresh.getUnits());
-		assertEquals(Set.of(other, unit), elsewhere.getUnits());
-		assertEquals(Set.of(unit), already.getUnits());
-		assertTrue(leaving.getUnits()
-						  .isEmpty());
-		verify(userAccountRepository).save(fresh);
-		verify(userAccountRepository).save(elsewhere);
-		verify(userAccountRepository).save(leaving);
-		verify(userAccountRepository, never()).save(already);
-		verifyNoInteractions(unitMembershipService);
-	}
+    // ── saveAclRequests: ACL id validation ────────────────────────────────────────
 
-	// ── saveAclRequests: ACL id validation ────────────────────────────────────────
+    @Test
+    void saveAclRequestsWithInvalidAclIdFails() {
+        var acls = List.of(AclRequest.builder()
+            .user(ADMIN_ID)
+            .readPrivilege(true)
+            .build());
 
-	@Test
-	void saveAclRequestsWithInvalidAclIdFails() {
-		var acls = List.of(AclRequest.builder()
-									 .user(ADMIN_ID)
-									 .readPrivilege(true)
-									 .build());
+        var exception = assertThrows(VempainAclException.class, () -> unitService.saveAclRequests(0L, acls));
+        assertEquals("New ACL ID is invalid", exception.getMessage());
+        assertThrows(VempainAclException.class, () -> unitService.saveAclRequests(null, acls));
+        verify(aclRepository, never()).save(any());
+    }
 
-		var exception = assertThrows(VempainAclException.class, () -> unitService.saveAclRequests(0L, acls));
-		assertEquals("New ACL ID is invalid", exception.getMessage());
-		assertThrows(VempainAclException.class, () -> unitService.saveAclRequests(null, acls));
-		verify(aclRepository, never()).save(any());
-	}
-
-	private static UserAccount buildUser(long id, Unit unit) {
-		return UserAccount.builder()
-						  .id(id)
-						  .loginName("user" + id)
-						  .units(unit == null ? null : new java.util.HashSet<>(Set.of(unit)))
-						  .build();
-	}
+    private static UserAccount buildUser(long id, Unit unit) {
+        return UserAccount.builder()
+            .id(id)
+            .loginName("user" + id)
+            .units(unit == null ? null : new java.util.HashSet<>(Set.of(unit)))
+            .build();
+    }
 }

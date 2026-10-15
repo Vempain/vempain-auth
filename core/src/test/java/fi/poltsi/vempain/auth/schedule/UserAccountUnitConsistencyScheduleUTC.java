@@ -1,51 +1,53 @@
 package fi.poltsi.vempain.auth.schedule;
 
-import fi.poltsi.vempain.auth.entity.Unit;
-import fi.poltsi.vempain.auth.entity.UserAccount;
-import fi.poltsi.vempain.auth.service.UnitService;
-import fi.poltsi.vempain.auth.service.UserService;
-import fi.poltsi.vempain.auth.tools.TestUTCTools;
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Collections;
-import java.util.List;
+import fi.poltsi.vempain.auth.entity.Unit;
+import fi.poltsi.vempain.auth.entity.UserAccount;
+import fi.poltsi.vempain.auth.service.UnitService;
+import fi.poltsi.vempain.auth.service.UserService;
+import fi.poltsi.vempain.auth.tools.TestUTCTools;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 
 class UserAccountUnitConsistencyScheduleUTC {
-	@Mock
-	UnitService unitService;
-	@Mock
-	UserService userService;
 
-	private UserUnitConsistencySchedule userUnitConsistencySchedule;
+    @Mock
+    UnitService unitService;
+    @Mock
+    UserService userService;
 
-	@BeforeEach
-	void setUp() {
-		MockitoAnnotations.openMocks(this);
-		userUnitConsistencySchedule = new UserUnitConsistencySchedule(unitService, userService);
-	}
+    private UserUnitConsistencySchedule userUnitConsistencySchedule;
 
-	@Test
-	void verifyOk() {
-		List<UserAccount> users = TestUTCTools.generateUserList(5L);
-		List<Unit>        units = TestUTCTools.generateUnitList(5L);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        userUnitConsistencySchedule = new UserUnitConsistencySchedule(unitService, userService);
+    }
 
-		// We add a user with non-empty unit list
-		users.getFirst()
-			 .setUnits(Collections.singleton(units.getFirst()));
+    @Test
+    void verifyOk() {
+        List<UserAccount> users = TestUTCTools.generateUserList(5L);
+        List<Unit> units = TestUTCTools.generateUnitList(5L);
 
-		when(userService.findAll()).thenReturn(users);
-		when(unitService.findAll()).thenReturn(units);
+        // We add a user with non-empty unit list
+        users.getFirst()
+            .setUnits(Collections.singleton(units.getFirst()));
 
-		try {
-			userUnitConsistencySchedule.verify();
-		} catch (Exception e) {
-			fail("Should not have received any exceptions for normal run: " + e);
-		}
-	}
+        when(userService.findAll()).thenReturn(users);
+        when(unitService.findAll()).thenReturn(units);
+
+        try {
+            userUnitConsistencySchedule.verify();
+        } catch (Exception e) {
+            fail("Should not have received any exceptions for normal run: " + e);
+        }
+    }
 }

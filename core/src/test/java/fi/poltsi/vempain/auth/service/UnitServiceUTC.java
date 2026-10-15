@@ -1,18 +1,19 @@
 package fi.poltsi.vempain.auth.service;
 
-import fi.poltsi.vempain.auth.entity.Unit;
-import fi.poltsi.vempain.auth.repository.AclRepository;
-import fi.poltsi.vempain.auth.repository.UnitRepository;
-import fi.poltsi.vempain.auth.tools.TestUTCTools;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.StreamSupport;
+import fi.poltsi.vempain.auth.entity.Unit;
+import fi.poltsi.vempain.auth.repository.AclRepository;
+import fi.poltsi.vempain.auth.repository.UnitRepository;
+import fi.poltsi.vempain.auth.tools.TestUTCTools;
 
 import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,59 +24,59 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UnitServiceUTC {
-	private final static int count = 10;
 
-	@Mock
-	private UnitRepository unitRepository;
-	@Mock
-	private AclRepository  aclRepository;
+    private static final int COUNT = 10;
 
-	@Mock
-	private fi.poltsi.vempain.auth.repository.UserAccountRepository userAccountRepository;
-	@Mock
-	private UnitMembershipService                                   unitMembershipService;
+    @Mock
+    private UnitRepository unitRepository;
+    @Mock
+    private AclRepository aclRepository;
 
-	@InjectMocks
-	private UnitService unitService;
+    @Mock
+    private fi.poltsi.vempain.auth.repository.UserAccountRepository userAccountRepository;
+    @Mock
+    private UnitMembershipService unitMembershipService;
 
-	@Test
-	void findAllOk() {
-		List<Unit> units = TestUTCTools.generateUnitList(count);
-		when(unitRepository.findAll()).thenReturn(units);
+    @InjectMocks
+    private UnitService unitService;
 
-		try {
-			Iterable<Unit> results = unitService.findAll();
-			assertEquals(10L, StreamSupport.stream(results.spliterator(), false)
-										   .count());
-		} catch (Exception e) {
-			fail("Should not have received an exception when fetching all units: " + e.getMessage());
-		}
-	}
+    @Test
+    void findAllOk() {
+        List<Unit> units = TestUTCTools.generateUnitList(COUNT);
+        when(unitRepository.findAll()).thenReturn(units);
 
-	@Test
-	void findByIdOk() {
-		var unit = TestUTCTools.generateUnit(1L);
-		var acl = TestUTCTools.generateAcl(1L, 1L, ADMIN_ID, null);
-		unit.setAclId(1L);
-		when(unitRepository.findById(anyLong())).thenReturn(Optional.of(unit));
-		when(aclRepository.getAclByAclId(acl.getAclId()))
-				.thenReturn(List.of(acl));
+        try {
+            Iterable<Unit> results = unitService.findAll();
+            assertEquals(10L, StreamSupport.stream(results.spliterator(), false)
+                .count());
+        } catch (Exception e) {
+            fail("Should not have received an exception when fetching all units: " + e.getMessage());
+        }
+    }
 
-		try {
-			var unitResponse = unitService.findById(1L);
-			assertNotNull(unitResponse);
-			assertEquals(1L, unitResponse.getId());
-		} catch (Exception e) {
-			fail("Should not have received an exception when fetching a unit: " + e.getMessage());
-		}
-	}
+    @Test
+    void findByIdOk() {
+        var unit = TestUTCTools.generateUnit(1L);
+        var acl = TestUTCTools.generateAcl(1L, 1L, ADMIN_ID, null);
+        unit.setAclId(1L);
+        when(unitRepository.findById(anyLong())).thenReturn(Optional.of(unit));
+        when(aclRepository.getAclByAclId(acl.getAclId())).thenReturn(List.of(acl));
 
-	@Test
-	void deleteById() {
-		try {
-			unitService.deleteById(1L);
-		} catch (Exception e) {
-			fail("Should not have received an exception when deleting a unit by ID: " + e.getMessage());
-		}
-	}
+        try {
+            var unitResponse = unitService.findById(1L);
+            assertNotNull(unitResponse);
+            assertEquals(1L, unitResponse.getId());
+        } catch (Exception e) {
+            fail("Should not have received an exception when fetching a unit: " + e.getMessage());
+        }
+    }
+
+    @Test
+    void deleteById() {
+        try {
+            unitService.deleteById(1L);
+        } catch (Exception e) {
+            fail("Should not have received an exception when deleting a unit by ID: " + e.getMessage());
+        }
+    }
 }

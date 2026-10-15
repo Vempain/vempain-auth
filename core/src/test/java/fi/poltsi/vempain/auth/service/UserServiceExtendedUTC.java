@@ -1,15 +1,11 @@
 package fi.poltsi.vempain.auth.service;
 
-import fi.poltsi.vempain.auth.api.AccountStatus;
-import fi.poltsi.vempain.auth.api.PrivacyType;
-import fi.poltsi.vempain.auth.api.request.AclRequest;
-import fi.poltsi.vempain.auth.api.request.UserRequest;
-import fi.poltsi.vempain.auth.entity.UserAccount;
-import fi.poltsi.vempain.auth.exception.VempainAclException;
-import fi.poltsi.vempain.auth.repository.AclRepository;
-import fi.poltsi.vempain.auth.repository.UserAccountRepository;
-import fi.poltsi.vempain.auth.security.AclAuthorizationService;
-import fi.poltsi.vempain.auth.tools.TestUTCTools;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,11 +20,16 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import fi.poltsi.vempain.auth.api.AccountStatus;
+import fi.poltsi.vempain.auth.api.PrivacyType;
+import fi.poltsi.vempain.auth.api.request.AclRequest;
+import fi.poltsi.vempain.auth.api.request.UserRequest;
+import fi.poltsi.vempain.auth.entity.UserAccount;
+import fi.poltsi.vempain.auth.exception.VempainAclException;
+import fi.poltsi.vempain.auth.repository.AclRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
+import fi.poltsi.vempain.auth.security.AclAuthorizationService;
+import fi.poltsi.vempain.auth.tools.TestUTCTools;
 
 import static fi.poltsi.vempain.auth.api.Constants.ADMIN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,368 +50,372 @@ import static org.mockito.Mockito.when;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class UserServiceExtendedUTC {
 
-	@Mock
-	private UserAccountRepository userAccountRepository;
-	@Mock
-	private AclRepository         aclRepository;
-	@Mock
-	private AclAuthorizationService aclAuthorizationService;
-
-	@Mock
-	private fi.poltsi.vempain.auth.repository.UnitRepository unitRepository;
-
-	@InjectMocks
-	private UserService userService;
-
-	@BeforeEach
-	void setUp() {
-		SecurityContextHolder.clearContext();
-	}
-
-	@AfterEach
-	void tearDown() {
-		SecurityContextHolder.clearContext();
-	}
-
-	// ── findUserResponseById ──────────────────────────────────────────────────────
-
-	@Test
-	void findUserResponseByIdFoundOk() {
-		var user = buildFullUser(1L, 1L);
-		// Long.valueOf() is needed to stub findById(Long) from CrudRepository, not findById(long) from UserAccountRepository
-		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
-		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
-		when(aclAuthorizationService.canRead(1L)).thenReturn(true);
-
-		var response = userService.findUserResponseById(1L);
-		assertNotNull(response);
-		assertEquals(1L, response.getId());
-	}
-
-	@Test
-	void findUserResponseByIdNotFoundReturnsNull() {
-		when(userAccountRepository.findById(99L)).thenReturn(Optional.empty());
-
-		var response = userService.findUserResponseById(99L);
-		assertNull(response);
-	}
-
-	// ── findByLogin ───────────────────────────────────────────────────────────────
-
-	@Test
-	void findByLoginFoundOk() {
-		var user = TestUTCTools.generateUser(1L);
-		when(userAccountRepository.findByLoginName("testlogin")).thenReturn(Optional.of(user));
-
-		var result = userService.findByLogin("testlogin");
-		assertTrue(result.isPresent());
-	}
-
-	@Test
-	void findByLoginNotFoundReturnsEmpty() {
-		when(userAccountRepository.findByLoginName("nobody")).thenReturn(Optional.empty());
-
-		var result = userService.findByLogin("nobody");
-		assertTrue(result.isEmpty());
-	}
-
-	// ── save ──────────────────────────────────────────────────────────────────────
-
-	@Test
-	void saveUserOk() {
-		var user = TestUTCTools.generateUser(1L);
-		when(userAccountRepository.save(user)).thenReturn(user);
-
-		var result = userService.save(user);
-		assertEquals(user, result);
-	}
-
-	// ── saveAclRequests ───────────────────────────────────────────────────────────
-
-	@Test
-	void saveAclRequestsOk() {
-		List<AclRequest> requests = buildAclRequests(1L, 1L, null);
-		when(aclRepository.getAclByAclId(1L)).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-
-		try {
-			userService.saveAclRequests(1L, requests);
-		} catch (VempainAclException e) {
-			fail("Should not have thrown: " + e.getMessage());
-		}
-	}
-
-	@Test
-	void saveAclRequestsNullIdFails() {
-		assertThrows(VempainAclException.class, () -> userService.saveAclRequests(null, new ArrayList<>()));
-	}
-
-	@Test
-	void saveAclRequestsNegativeIdFails() {
-		assertThrows(VempainAclException.class, () -> userService.saveAclRequests(-1L, new ArrayList<>()));
-	}
-
-	@Test
-	void saveAclRequestsNullListFails() {
-		assertThrows(VempainAclException.class, () -> userService.saveAclRequests(1L, null));
-	}
-
-	@Test
-	void saveAclRequestsEmptyListFails() {
-		assertThrows(VempainAclException.class, () -> userService.saveAclRequests(1L, new ArrayList<>()));
-	}
-
-	@Test
-	void saveAclRequestsReplacesExistingAclsOk() {
-		List<AclRequest> requests = buildAclRequests(1L, ADMIN_ID, null);
-		var existingAcl = TestUTCTools.generateAcl(1L, 1L, ADMIN_ID, null);
-		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of(existingAcl));
-		doNothing().when(aclRepository).deleteAclsByAclId(1L);
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-
-		try {
-			userService.saveAclRequests(1L, requests);
-		} catch (VempainAclException e) {
-			fail("Should not have thrown: " + e.getMessage());
-		}
-	}
-
-	// ── createUser ────────────────────────────────────────────────────────────────
-
-	@Test
-	void createUserOk() {
-		setSecurityContext(ADMIN_ID);
-
-		UserRequest req = buildUserRequest("ValidPass1!", ADMIN_ID);
-		when(aclRepository.getNextAclId()).thenReturn(1L);
-		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-
-		var savedUser = buildFullUser(1L, 1L);
-		when(userAccountRepository.save(any())).thenReturn(savedUser);
-
-		var response = userService.createUser(req);
-		assertNotNull(response);
-	}
-
-	@Test
-	void createUserInvalidPasswordThrows() {
-		setSecurityContext(ADMIN_ID);
-
-		UserRequest req = buildUserRequest("weak", ADMIN_ID);
-		when(aclRepository.getNextAclId()).thenReturn(1L);
-		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-
-		var ex = assertThrows(ResponseStatusException.class, () -> userService.createUser(req));
-		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-	}
-
-	@Test
-	void createUserBadAclThrows() {
-		setSecurityContext(ADMIN_ID);
-
-		// No ACL requests → saveAclRequests will throw VempainAclException
-		var req = UserRequest.builder()
-							 .loginName("testuser")
-							 .password("ValidPass1!")
-							 .name("Test User")
-							 .nick("testy")
-							 .email("test@test.com")
-							 .privacyType(PrivacyType.PRIVATE)
-							 .birthday(Instant.now().minusSeconds(1000))
-							 .acls(new ArrayList<>())   // empty → throws
-							 .build();
-		when(aclRepository.getNextAclId()).thenReturn(1L);
-
-		var ex = assertThrows(ResponseStatusException.class, () -> userService.createUser(req));
-		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-	}
-
-	// ── updateUser ────────────────────────────────────────────────────────────────
-
-	@Test
-	void updateUserOk() {
-		setSecurityContext(ADMIN_ID);
-
-		var existingUser = buildFullUser(1L, 5L);
-		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(existingUser));
-
-		UserRequest req = buildUserRequest("ValidPass1!", ADMIN_ID);
-		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-		when(userAccountRepository.save(any())).thenReturn(existingUser);
-
-		var response = userService.updateUser(1L, req);
-		assertNotNull(response);
-	}
-
-	@Test
-	void updateUserNotFoundThrows() {
-		when(userAccountRepository.findById(99L)).thenReturn(Optional.empty());
-
-		UserRequest req = buildUserRequest("ValidPass1!", ADMIN_ID);
-		var ex = assertThrows(ResponseStatusException.class, () -> userService.updateUser(99L, req));
-		assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-	}
-
-	@Test
-	void updateUserBadAclThrows() {
-		setSecurityContext(ADMIN_ID);
-
-		var existingUser = buildFullUser(1L, 5L);
-		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(existingUser));
-
-		// empty acl list → exception
-		var req = UserRequest.builder()
-							 .loginName("testuser")
-							 .password("ValidPass1!")
-							 .name("Test User")
-							 .nick("testy")
-							 .email("test@test.com")
-							 .privacyType(PrivacyType.PRIVATE)
-							 .birthday(Instant.now().minusSeconds(1000))
-							 .acls(new ArrayList<>())
-							 .build();
-
-		var ex = assertThrows(ResponseStatusException.class, () -> userService.updateUser(1L, req));
-		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-	}
-
-	// ── helpers ───────────────────────────────────────────────────────────────────
-
-	private void setSecurityContext(long userId) {
-		var userDetails = new UserDetailsImpl(userId, "login", "nick", "email@test.com",
-				"password", Set.of(), null);
-		var auth = new UsernamePasswordAuthenticationToken(userDetails, null);
-		SecurityContextHolder.getContext().setAuthentication(auth);
-	}
-
-	private UserAccount buildFullUser(long id, long aclId) {
-		return UserAccount.builder()
-						  .id(id)
-						  .aclId(aclId)
-						  .loginName("user" + id)
-						  .name("User " + id)
-						  .nick("user" + id)
-						  .email("user" + id + "@test.com")
-						  .password("$2a$12$hashedpassword")
-						  .privacyType(PrivacyType.PRIVATE)
-						  .birthday(Instant.now().minusSeconds(100000))
-						  .status(AccountStatus.ACTIVE)
-						  .locked(false)
-						  .creator(ADMIN_ID)
-						  .created(Instant.now())
-						  .build();
-	}
-
-	private UserRequest buildUserRequest(String password, Long userId) {
-		return UserRequest.builder()
-						  .loginName("testuser")
-						  .password(password)
-						  .name("Test User")
-						  .nick("testy")
-						  .email("test@test.com")
-						  .privacyType(PrivacyType.PRIVATE)
-						  .birthday(Instant.now().minusSeconds(100000))
-						  .acls(buildAclRequests(1L, userId, null))
-						  .build();
-	}
-
-	private List<AclRequest> buildAclRequests(long aclId, Long userId, Long unitId) {
-		return List.of(AclRequest.builder()
-								 .aclId(aclId)
-								 .user(userId)
-								 .unit(unitId)
-								 .readPrivilege(true)
-								 .createPrivilege(true)
-								 .modifyPrivilege(true)
-								 .deletePrivilege(true)
-								 .build());
-	}
-
-
-	// ── unit memberships ──────────────────────────────────────────────────────────
-
-	@Test
-	void findUserResponseByIdListsSortedDirectUnitIds() {
-		var user = buildFullUser(1L, 1L);
-		user.setUnits(new java.util.HashSet<>(List.of(TestUTCTools.generateUnit(5L), TestUTCTools.generateUnit(2L))));
-		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
-		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
-		when(aclAuthorizationService.canRead(1L)).thenReturn(true);
-
-		var response = userService.findUserResponseById(1L);
-
-		assertEquals(List.of(2L, 5L), response.getUnitIds());
-	}
-
-	@Test
-	void findUserResponseByIdWithoutAnyUnitSetHasNoUnitIds() {
-		var user = buildFullUser(1L, 1L);
-		user.setUnits(null);
-		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
-		when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
-		when(aclAuthorizationService.canRead(1L)).thenReturn(true);
-
-		var response = userService.findUserResponseById(1L);
-
-		assertEquals(List.of(), response.getUnitIds());
-	}
-
-	@Test
-	void createUserAppliesRequestedUnitsSkippingNullAndDuplicateIds() {
-		setSecurityContext(ADMIN_ID);
-		var unit = TestUTCTools.generateUnit(3L);
-		var req  = buildUserRequest("ValidPass1!", ADMIN_ID);
-		req.setUnitIds(java.util.Arrays.asList(null, 3L, 3L));
-		when(aclRepository.getNextAclId()).thenReturn(1L);
-		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-		when(unitRepository.findById(Long.valueOf(3L))).thenReturn(Optional.of(unit));
-		when(userAccountRepository.save(any())).thenAnswer(a -> {
-			UserAccount saved = a.getArgument(0);
-			saved.setId(1L);
-			return saved;
-		});
-
-		var response = userService.createUser(req);
-
-		assertEquals(List.of(3L), response.getUnitIds());
-		verify(unitRepository, times(1)).findById(Long.valueOf(3L));
-	}
-
-	@Test
-	void createUserWithUnknownUnitIsRejected() {
-		setSecurityContext(ADMIN_ID);
-		var req = buildUserRequest("ValidPass1!", ADMIN_ID);
-		req.setUnitIds(List.of(99L));
-		when(aclRepository.getNextAclId()).thenReturn(1L);
-		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-		when(unitRepository.findById(Long.valueOf(99L))).thenReturn(Optional.empty());
-
-		var ex = assertThrows(ResponseStatusException.class, () -> userService.createUser(req));
-
-		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-		assertEquals("Unknown unit 99", ex.getReason());
-		verify(userAccountRepository, never()).save(any());
-	}
-
-	// ── updateUser: password policy ───────────────────────────────────────────────
-
-	@Test
-	void updateUserWithWeakPasswordIsRejected() {
-		setSecurityContext(ADMIN_ID);
-		var existingUser = buildFullUser(1L, 5L);
-		when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(existingUser));
-		when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
-		when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
-
-		var ex = assertThrows(ResponseStatusException.class, () -> userService.updateUser(1L, buildUserRequest("weak", ADMIN_ID)));
-
-		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-		assertEquals("Password is not valid", ex.getReason());
-		verify(userAccountRepository, never()).save(any());
-	}
+    @Mock
+    private UserAccountRepository userAccountRepository;
+    @Mock
+    private AclRepository aclRepository;
+    @Mock
+    private AclAuthorizationService aclAuthorizationService;
+
+    @Mock
+    private fi.poltsi.vempain.auth.repository.UnitRepository unitRepository;
+
+    @InjectMocks
+    private UserService userService;
+
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    // ── findUserResponseById ──────────────────────────────────────────────────────
+
+    @Test
+    void findUserResponseByIdFoundOk() {
+        var user = buildFullUser(1L, 1L);
+        // Long.valueOf() is needed to stub findById(Long) from CrudRepository, not findById(long) from UserAccountRepository
+        when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
+        when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
+        when(aclAuthorizationService.canRead(1L)).thenReturn(true);
+
+        var response = userService.findUserResponseById(1L);
+        assertNotNull(response);
+        assertEquals(1L, response.getId());
+    }
+
+    @Test
+    void findUserResponseByIdNotFoundReturnsNull() {
+        when(userAccountRepository.findById(99L)).thenReturn(Optional.empty());
+
+        var response = userService.findUserResponseById(99L);
+        assertNull(response);
+    }
+
+    // ── findByLogin ───────────────────────────────────────────────────────────────
+
+    @Test
+    void findByLoginFoundOk() {
+        var user = TestUTCTools.generateUser(1L);
+        when(userAccountRepository.findByLoginName("testlogin")).thenReturn(Optional.of(user));
+
+        var result = userService.findByLogin("testlogin");
+        assertTrue(result.isPresent());
+    }
+
+    @Test
+    void findByLoginNotFoundReturnsEmpty() {
+        when(userAccountRepository.findByLoginName("nobody")).thenReturn(Optional.empty());
+
+        var result = userService.findByLogin("nobody");
+        assertTrue(result.isEmpty());
+    }
+
+    // ── save ──────────────────────────────────────────────────────────────────────
+
+    @Test
+    void saveUserOk() {
+        var user = TestUTCTools.generateUser(1L);
+        when(userAccountRepository.save(user)).thenReturn(user);
+
+        var result = userService.save(user);
+        assertEquals(user, result);
+    }
+
+    // ── saveAclRequests ───────────────────────────────────────────────────────────
+
+    @Test
+    void saveAclRequestsOk() {
+        List<AclRequest> requests = buildAclRequests(1L, 1L, null);
+        when(aclRepository.getAclByAclId(1L)).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+
+        try {
+            userService.saveAclRequests(1L, requests);
+        } catch (VempainAclException e) {
+            fail("Should not have thrown: " + e.getMessage());
+        }
+    }
+
+    @Test
+    void saveAclRequestsNullIdFails() {
+        assertThrows(VempainAclException.class, () -> userService.saveAclRequests(null, new ArrayList<>()));
+    }
+
+    @Test
+    void saveAclRequestsNegativeIdFails() {
+        assertThrows(VempainAclException.class, () -> userService.saveAclRequests(-1L, new ArrayList<>()));
+    }
+
+    @Test
+    void saveAclRequestsNullListFails() {
+        assertThrows(VempainAclException.class, () -> userService.saveAclRequests(1L, null));
+    }
+
+    @Test
+    void saveAclRequestsEmptyListFails() {
+        assertThrows(VempainAclException.class, () -> userService.saveAclRequests(1L, new ArrayList<>()));
+    }
+
+    @Test
+    void saveAclRequestsReplacesExistingAclsOk() {
+        List<AclRequest> requests = buildAclRequests(1L, ADMIN_ID, null);
+        var existingAcl = TestUTCTools.generateAcl(1L, 1L, ADMIN_ID, null);
+        when(aclRepository.getAclByAclId(1L)).thenReturn(List.of(existingAcl));
+        doNothing().when(aclRepository)
+            .deleteAclsByAclId(1L);
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+
+        try {
+            userService.saveAclRequests(1L, requests);
+        } catch (VempainAclException e) {
+            fail("Should not have thrown: " + e.getMessage());
+        }
+    }
+
+    // ── createUser ────────────────────────────────────────────────────────────────
+
+    @Test
+    void createUserOk() {
+        setSecurityContext(ADMIN_ID);
+
+        UserRequest req = buildUserRequest("ValidPass1!", ADMIN_ID);
+        when(aclRepository.getNextAclId()).thenReturn(1L);
+        when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+
+        var savedUser = buildFullUser(1L, 1L);
+        when(userAccountRepository.save(any())).thenReturn(savedUser);
+
+        var response = userService.createUser(req);
+        assertNotNull(response);
+    }
+
+    @Test
+    void createUserInvalidPasswordThrows() {
+        setSecurityContext(ADMIN_ID);
+
+        UserRequest req = buildUserRequest("weak", ADMIN_ID);
+        when(aclRepository.getNextAclId()).thenReturn(1L);
+        when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+
+        var ex = assertThrows(ResponseStatusException.class, () -> userService.createUser(req));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    }
+
+    @Test
+    void createUserBadAclThrows() {
+        setSecurityContext(ADMIN_ID);
+
+        // No ACL requests → saveAclRequests will throw VempainAclException
+        var req = UserRequest.builder()
+            .loginName("testuser")
+            .password("ValidPass1!")
+            .name("Test User")
+            .nick("testy")
+            .email("test@test.com")
+            .privacyType(PrivacyType.PRIVATE)
+            .birthday(Instant.now()
+                .minusSeconds(1000))
+            .acls(new ArrayList<>())   // empty → throws
+            .build();
+        when(aclRepository.getNextAclId()).thenReturn(1L);
+
+        var ex = assertThrows(ResponseStatusException.class, () -> userService.createUser(req));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    }
+
+    // ── updateUser ────────────────────────────────────────────────────────────────
+
+    @Test
+    void updateUserOk() {
+        setSecurityContext(ADMIN_ID);
+
+        var existingUser = buildFullUser(1L, 5L);
+        when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(existingUser));
+
+        UserRequest req = buildUserRequest("ValidPass1!", ADMIN_ID);
+        when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+        when(userAccountRepository.save(any())).thenReturn(existingUser);
+
+        var response = userService.updateUser(1L, req);
+        assertNotNull(response);
+    }
+
+    @Test
+    void updateUserNotFoundThrows() {
+        when(userAccountRepository.findById(99L)).thenReturn(Optional.empty());
+
+        UserRequest req = buildUserRequest("ValidPass1!", ADMIN_ID);
+        var ex = assertThrows(ResponseStatusException.class, () -> userService.updateUser(99L, req));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void updateUserBadAclThrows() {
+        setSecurityContext(ADMIN_ID);
+
+        var existingUser = buildFullUser(1L, 5L);
+        when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(existingUser));
+
+        // empty acl list → exception
+        var req = UserRequest.builder()
+            .loginName("testuser")
+            .password("ValidPass1!")
+            .name("Test User")
+            .nick("testy")
+            .email("test@test.com")
+            .privacyType(PrivacyType.PRIVATE)
+            .birthday(Instant.now()
+                .minusSeconds(1000))
+            .acls(new ArrayList<>())
+            .build();
+
+        var ex = assertThrows(ResponseStatusException.class, () -> userService.updateUser(1L, req));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────────
+
+    private void setSecurityContext(long userId) {
+        var userDetails = new UserDetailsImpl(userId, "login", "nick", "email@test.com", "password", Set.of(), null);
+        var auth = new UsernamePasswordAuthenticationToken(userDetails, null);
+        SecurityContextHolder.getContext()
+            .setAuthentication(auth);
+    }
+
+    private UserAccount buildFullUser(long id, long aclId) {
+        return UserAccount.builder()
+            .id(id)
+            .aclId(aclId)
+            .loginName("user" + id)
+            .name("User " + id)
+            .nick("user" + id)
+            .email("user" + id + "@test.com")
+            .password("$2a$12$hashedpassword")
+            .privacyType(PrivacyType.PRIVATE)
+            .birthday(Instant.now()
+                .minusSeconds(100000))
+            .status(AccountStatus.ACTIVE)
+            .locked(false)
+            .creator(ADMIN_ID)
+            .created(Instant.now())
+            .build();
+    }
+
+    private UserRequest buildUserRequest(String password, Long userId) {
+        return UserRequest.builder()
+            .loginName("testuser")
+            .password(password)
+            .name("Test User")
+            .nick("testy")
+            .email("test@test.com")
+            .privacyType(PrivacyType.PRIVATE)
+            .birthday(Instant.now()
+                .minusSeconds(100000))
+            .acls(buildAclRequests(1L, userId, null))
+            .build();
+    }
+
+    private List<AclRequest> buildAclRequests(long aclId, Long userId, Long unitId) {
+        return List.of(AclRequest.builder()
+            .aclId(aclId)
+            .user(userId)
+            .unit(unitId)
+            .readPrivilege(true)
+            .createPrivilege(true)
+            .modifyPrivilege(true)
+            .deletePrivilege(true)
+            .build());
+    }
+
+    // ── unit memberships ──────────────────────────────────────────────────────────
+
+    @Test
+    void findUserResponseByIdListsSortedDirectUnitIds() {
+        var user = buildFullUser(1L, 1L);
+        user.setUnits(new java.util.HashSet<>(List.of(TestUTCTools.generateUnit(5L), TestUTCTools.generateUnit(2L))));
+        when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
+        when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
+        when(aclAuthorizationService.canRead(1L)).thenReturn(true);
+
+        var response = userService.findUserResponseById(1L);
+
+        assertEquals(List.of(2L, 5L), response.getUnitIds());
+    }
+
+    @Test
+    void findUserResponseByIdWithoutAnyUnitSetHasNoUnitIds() {
+        var user = buildFullUser(1L, 1L);
+        user.setUnits(null);
+        when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(user));
+        when(aclRepository.getAclByAclId(1L)).thenReturn(List.of());
+        when(aclAuthorizationService.canRead(1L)).thenReturn(true);
+
+        var response = userService.findUserResponseById(1L);
+
+        assertEquals(List.of(), response.getUnitIds());
+    }
+
+    @Test
+    void createUserAppliesRequestedUnitsSkippingNullAndDuplicateIds() {
+        setSecurityContext(ADMIN_ID);
+        var unit = TestUTCTools.generateUnit(3L);
+        var req = buildUserRequest("ValidPass1!", ADMIN_ID);
+        req.setUnitIds(java.util.Arrays.asList(null, 3L, 3L));
+        when(aclRepository.getNextAclId()).thenReturn(1L);
+        when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+        when(unitRepository.findById(Long.valueOf(3L))).thenReturn(Optional.of(unit));
+        when(userAccountRepository.save(any())).thenAnswer(a -> {
+            UserAccount saved = a.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+
+        var response = userService.createUser(req);
+
+        assertEquals(List.of(3L), response.getUnitIds());
+        verify(unitRepository, times(1)).findById(Long.valueOf(3L));
+    }
+
+    @Test
+    void createUserWithUnknownUnitIsRejected() {
+        setSecurityContext(ADMIN_ID);
+        var req = buildUserRequest("ValidPass1!", ADMIN_ID);
+        req.setUnitIds(List.of(99L));
+        when(aclRepository.getNextAclId()).thenReturn(1L);
+        when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+        when(unitRepository.findById(Long.valueOf(99L))).thenReturn(Optional.empty());
+
+        var ex = assertThrows(ResponseStatusException.class, () -> userService.createUser(req));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("Unknown unit 99", ex.getReason());
+        verify(userAccountRepository, never()).save(any());
+    }
+
+    // ── updateUser: password policy ───────────────────────────────────────────────
+
+    @Test
+    void updateUserWithWeakPasswordIsRejected() {
+        setSecurityContext(ADMIN_ID);
+        var existingUser = buildFullUser(1L, 5L);
+        when(userAccountRepository.findById(Long.valueOf(1L))).thenReturn(Optional.of(existingUser));
+        when(aclRepository.getAclByAclId(anyLong())).thenReturn(new ArrayList<>());
+        when(aclRepository.save(any())).thenAnswer(a -> a.getArgument(0));
+
+        var ex = assertThrows(ResponseStatusException.class, () -> userService.updateUser(1L, buildUserRequest("weak", ADMIN_ID)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("Password is not valid", ex.getReason());
+        verify(userAccountRepository, never()).save(any());
+    }
 }
