@@ -257,8 +257,8 @@ class UnitServiceExtendedUTC {
     @Test
     void findPagedListsUnitsSortedByNameWithTheirMembers() {
         when(unitRepository.findAll()).thenReturn(List.of(buildUnit(2L, 5L), buildUnit(1L, 6L)));
-        when(userAccountRepository.findByUnits_Id(1L)).thenReturn(List.of(TestUTCTools.generateUser(9L)));
-        when(userAccountRepository.findByUnits_Id(2L)).thenReturn(List.of());
+        when(userAccountRepository.findByUnitsId(1L)).thenReturn(List.of(TestUTCTools.generateUser(9L)));
+        when(userAccountRepository.findByUnitsId(2L)).thenReturn(List.of());
         when(unitMembershipService.findChildUnitIds(1L)).thenReturn(List.of(2L));
         when(unitMembershipService.findChildUnitIds(2L)).thenReturn(List.of());
 
@@ -305,7 +305,7 @@ class UnitServiceExtendedUTC {
         when(userAccountRepository.findById(Long.valueOf(10L))).thenReturn(Optional.of(fresh));
         when(userAccountRepository.findById(Long.valueOf(11L))).thenReturn(Optional.of(elsewhere));
         when(userAccountRepository.findById(Long.valueOf(12L))).thenReturn(Optional.of(already));
-        when(userAccountRepository.findByUnits_Id(1L)).thenReturn(List.of(already, leaving));
+        when(userAccountRepository.findByUnitsId(1L)).thenReturn(List.of(already, leaving));
 
         unitService.updateMembers(1L, List.of(10L, 11L, 12L), null);
 

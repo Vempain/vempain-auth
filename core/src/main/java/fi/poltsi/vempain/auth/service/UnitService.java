@@ -84,7 +84,7 @@ public class UnitService {
      * Fills the direct member user and unit ids of the unit.
      */
     public void populateWithMembers(UnitResponse unitResponse) {
-        unitResponse.setUserIds(userAccountRepository.findByUnits_Id(unitResponse.getId())
+        unitResponse.setUserIds(userAccountRepository.findByUnitsId(unitResponse.getId())
             .stream()
             .map(UserAccount::getId)
             .sorted()
@@ -135,7 +135,7 @@ public class UnitService {
             }
 
             // The user account owns the join table, so memberships are changed through the users
-            for (var current : userAccountRepository.findByUnits_Id(unitId)) {
+            for (var current : userAccountRepository.findByUnitsId(unitId)) {
                 if (!requested.contains(current.getId())
                     && current.getUnits() != null) {
                     current.getUnits()

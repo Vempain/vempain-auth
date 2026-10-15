@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UnitServiceUTC {
 
-    private final static int count = 10;
+    private static final int COUNT = 10;
 
     @Mock
     private UnitRepository unitRepository;
@@ -42,7 +42,7 @@ class UnitServiceUTC {
 
     @Test
     void findAllOk() {
-        List<Unit> units = TestUTCTools.generateUnitList(count);
+        List<Unit> units = TestUTCTools.generateUnitList(COUNT);
         when(unitRepository.findAll()).thenReturn(units);
 
         try {

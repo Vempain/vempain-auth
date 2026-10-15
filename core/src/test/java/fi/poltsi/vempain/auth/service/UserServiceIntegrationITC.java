@@ -23,7 +23,7 @@ class UserServiceIntegrationITC extends IntegrationTestSetup {
     private UserAccountRepository userAccountRepository;
 
     @Test
-    void lockUser_setsLockedTrue() {
+    void lockUserSetsLockedTrue() {
         var user = UserAccount.builder()
             .loginName("lockme")
             .nick("Lock Me")

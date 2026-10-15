@@ -18,8 +18,8 @@ public class AclIdService {
     public Acl generateNewAcl(Long userId, Long unitId, boolean read, boolean create, boolean modify, boolean delete) {
         var sqlString = """
                 INSERT INTO acl (acl_id, user_id, unit_id, read_privilege, create_privilege, modify_privilege, delete_privilege)
-                			VALUES ((SELECT nextval('acl_acl_id_seq')), :userId, :unitId, :readPriv, :createPriv, :modifyPriv, :deletePriv)
-                			RETURNING id, acl_id, user_id, unit_id, read_privilege, create_privilege, modify_privilege, delete_privilege
+                VALUES ((SELECT nextval('acl_acl_id_seq')), :userId, :unitId, :readPriv, :createPriv, :modifyPriv, :deletePriv)
+                RETURNING id, acl_id, user_id, unit_id, read_privilege, create_privilege, modify_privilege, delete_privilege
                 """;
 
         var query = entityManager.createNativeQuery(sqlString, Acl.class);

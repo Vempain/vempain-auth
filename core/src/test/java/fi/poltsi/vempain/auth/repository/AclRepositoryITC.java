@@ -19,11 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(classes = TestApp.class)
 class AclRepositoryITC extends IntegrationTestSetup {
 
-    private final static long initCount = 10L;
+    private static final long INIT_COUNT = 10L;
 
     @Test
     void getNextAclId() {
-        testITCTools.generateAcls(initCount);
+        testITCTools.generateAcls(INIT_COUNT);
         Long nextId = aclRepository.getNextAclId();
         assertNotNull(nextId);
         log.info("Next ID: {}", nextId);
@@ -38,10 +38,10 @@ class AclRepositoryITC extends IntegrationTestSetup {
 
     @Test
     void getAllAclOk() {
-        testITCTools.generateAcls(initCount);
+        testITCTools.generateAcls(INIT_COUNT);
         var aclList = aclRepository.findAll();
         assertNotNull(aclList);
-        assertTrue(aclList.size() >= initCount);
+        assertTrue(aclList.size() >= INIT_COUNT);
     }
 
     @Test

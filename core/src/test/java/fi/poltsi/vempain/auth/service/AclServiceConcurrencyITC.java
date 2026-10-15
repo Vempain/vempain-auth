@@ -70,7 +70,7 @@ public class AclServiceConcurrencyITC {
                             errors.add(new IllegalStateException("Duplicate id: " + id));
                         }
                     }
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     errors.add(t);
                 } finally {
                     latch.countDown();

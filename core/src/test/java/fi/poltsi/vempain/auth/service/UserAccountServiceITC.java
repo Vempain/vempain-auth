@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(classes = TestApp.class)
 class UserAccountServiceITC extends IntegrationTestSetup {
 
-    private static final Long count = 10L;
+    private static final Long COUNT = 10L;
 
     @Test
     void findByIdOk() {
@@ -28,9 +28,9 @@ class UserAccountServiceITC extends IntegrationTestSetup {
 
     @Test
     void findAllOk() {
-        testITCTools.generateUsers(count);
+        testITCTools.generateUsers(COUNT);
         var users = userService.findAll();
         assertTrue(StreamSupport.stream(users.spliterator(), false)
-            .count() >= count);
+            .count() >= COUNT);
     }
 }

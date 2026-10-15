@@ -33,5 +33,5 @@ public interface UserAccountRepository extends CrudRepository<UserAccount, Long>
     /**
      * The direct user members of a unit.
      */
-    List<UserAccount> findByUnits_Id(long unitId);
+    List<UserAccount> findByUnitsId(long unitId);
 }

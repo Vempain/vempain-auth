@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AclServiceUTC {
 
-    private final static long itemCount = 10L;
+    private static final long ITEM_COUNT = 10L;
 
     @Mock
     AclRepository aclRepository;
@@ -62,12 +62,12 @@ class AclServiceUTC {
 
     @Test
     void findAllOk() {
-        List<Acl> acls = setupAclList(itemCount);
+        List<Acl> acls = setupAclList(ITEM_COUNT);
         when(aclRepository.findAll()).thenReturn(acls);
 
         Iterable<Acl> aclIterable = aclService.findAll();
         assertNotNull(aclIterable);
-        assertEquals((itemCount * 2), StreamSupport.stream(aclIterable.spliterator(), false)
+        assertEquals((ITEM_COUNT * 2), StreamSupport.stream(aclIterable.spliterator(), false)
             .count());
     }
 

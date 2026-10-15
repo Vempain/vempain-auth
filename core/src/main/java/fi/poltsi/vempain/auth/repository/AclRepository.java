@@ -27,8 +27,12 @@ public interface AclRepository extends ListPagingAndSortingRepository<Acl, Long>
     List<Acl> findByAclIdIn(@Param("aclIds") Collection<Long> aclIds);
 
     @Modifying
-    @Query(value = "UPDATE Acl SET userId = :userId, unitId = :unitId, readPrivilege = :readPriv, modifyPrivilege = :modifyPriv, createPrivilege = :createPriv, deletePrivilege = :deletePriv "
-            + "WHERE id = :id")
+    @Query(value = """
+            UPDATE Acl
+            SET userId = :userId, unitId = :unitId, readPrivilege = :readPriv, modifyPrivilege = :modifyPriv,
+                createPrivilege = :createPriv, deletePrivilege = :deletePriv
+            WHERE id = :id
+            """)
     void update(@Param(value = "id") Long id, @Param(value = "userId") Long userId, @Param(value = "unitId") Long unitId,
             @Param(value = "readPriv") boolean readPriv, @Param(value = "modifyPriv") boolean modifyPriv, @Param(value = "createPriv") boolean createPriv,
             @Param(value = "deletePriv") boolean deletePriv);

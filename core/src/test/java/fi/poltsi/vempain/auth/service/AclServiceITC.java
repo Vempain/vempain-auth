@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @SpringBootTest(classes = TestApp.class)
 class AclServiceITC extends IntegrationTestSetup {
 
-    static final long initCount = 5;
+    static final long INIT_COUNT = 5;
     static final long ACL_MULTIPLIER = 7L;
     @Autowired
     private AclService aclService;
@@ -39,18 +39,18 @@ class AclServiceITC extends IntegrationTestSetup {
 
     @Test
     void getAllOk() {
-        testITCTools.generateAcls(initCount);
+        testITCTools.generateAcls(INIT_COUNT);
         var acls = aclService.findAll();
         assertTrue(StreamSupport.stream(acls.spliterator(), false)
-            .count() >= ACL_MULTIPLIER * initCount);
+            .count() >= ACL_MULTIPLIER * INIT_COUNT);
     }
 
     @Test
     void getAclByAclIdOk() {
-        var aclIds = testITCTools.generateAcls(initCount);
+        var aclIds = testITCTools.generateAcls(INIT_COUNT);
         assertNotNull(aclIds);
         assertFalse(aclIds.isEmpty());
-        assertEquals(initCount, aclIds.size());
+        assertEquals(INIT_COUNT, aclIds.size());
         var acls = aclService.findAclByAclId(aclIds.getFirst());
         assertNotNull(acls);
         assertEquals(2L, acls.size());
@@ -75,14 +75,14 @@ class AclServiceITC extends IntegrationTestSetup {
 
     @Test
     void deleteByAclIdOk() {
-        var aclIds = testITCTools.generateAcls(initCount);
+        var aclIds = testITCTools.generateAcls(INIT_COUNT);
 
         try {
             for (Long aclId : aclIds) {
                 aclService.deleteByAclId(aclId);
             }
         } catch (VempainEntityNotFoundException e) {
-            fail("Should have been able to delete Acl with id: " + (initCount - 1));
+            fail("Should have been able to delete Acl with id: " + (INIT_COUNT - 1));
         }
     }
 
@@ -109,7 +109,7 @@ class AclServiceITC extends IntegrationTestSetup {
 
     @Test
     void updateOk() {
-        var aclList = testITCTools.generateAcls(initCount);
+        var aclList = testITCTools.generateAcls(INIT_COUNT);
         assertFalse(aclList.isEmpty());
         var acls = aclService.findAclByAclId(aclList.getFirst());
         assertNotNull(acls);
@@ -138,7 +138,7 @@ class AclServiceITC extends IntegrationTestSetup {
 
     @Test
     void updateFailsWithZeroAclId() {
-        var aclIds = testITCTools.generateAcls(initCount);
+        var aclIds = testITCTools.generateAcls(INIT_COUNT);
         Iterable<Acl> acls = aclService.findAclByAclId(aclIds.getFirst());
 
         for (Acl acl : acls) {
@@ -156,7 +156,7 @@ class AclServiceITC extends IntegrationTestSetup {
 
     @Test
     void updateFailsWithNegativeAclId() {
-        var aclIds = testITCTools.generateAcls(initCount);
+        var aclIds = testITCTools.generateAcls(INIT_COUNT);
         Iterable<Acl> acls = aclService.findAclByAclId(aclIds.getFirst());
         for (Acl acl : acls) {
             try {
@@ -172,7 +172,7 @@ class AclServiceITC extends IntegrationTestSetup {
 
     @Test
     void updateFailsWithNullUserAndUnit() {
-        var aclIdList = testITCTools.generateAcls(initCount);
+        var aclIdList = testITCTools.generateAcls(INIT_COUNT);
         Iterable<Acl> acls = aclService.findAclByAclId(aclIdList.getFirst());
 
         for (Acl acl : acls) {
@@ -191,7 +191,7 @@ class AclServiceITC extends IntegrationTestSetup {
 
     @Test
     void updateFailsWithUserAndUnitSet() {
-        var aclIds = testITCTools.generateAcls(initCount);
+        var aclIds = testITCTools.generateAcls(INIT_COUNT);
         Iterable<Acl> acls = aclService.findAclByAclId(aclIds.getFirst());
         for (Acl acl : acls) {
             try {
@@ -208,7 +208,7 @@ class AclServiceITC extends IntegrationTestSetup {
 
     @Test
     void updateWithAllPermissionsNoFail() {
-        var aclIds = testITCTools.generateAcls(initCount);
+        var aclIds = testITCTools.generateAcls(INIT_COUNT);
         Iterable<Acl> acls = aclService.findAclByAclId(aclIds.getFirst());
         for (Acl acl : acls) {
             try {
