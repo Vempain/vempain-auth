@@ -1,12 +1,7 @@
 package fi.poltsi.vempain.auth.controller;
 
-import fi.poltsi.vempain.auth.api.AccountStatus;
-import fi.poltsi.vempain.auth.api.PrivacyType;
-import fi.poltsi.vempain.auth.api.request.LoginRequest;
-import fi.poltsi.vempain.auth.entity.UserAccount;
-import fi.poltsi.vempain.auth.repository.AclRepository;
-import fi.poltsi.vempain.auth.repository.UserAccountRepository;
-import fi.poltsi.vempain.auth.tools.AuthTools;
+import java.time.Instant;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +13,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import tools.jackson.databind.ObjectMapper;
 
-import java.time.Instant;
+import fi.poltsi.vempain.auth.api.AccountStatus;
+import fi.poltsi.vempain.auth.api.PrivacyType;
+import fi.poltsi.vempain.auth.api.request.LoginRequest;
+import fi.poltsi.vempain.auth.entity.UserAccount;
+import fi.poltsi.vempain.auth.repository.AclRepository;
+import fi.poltsi.vempain.auth.repository.UserAccountRepository;
+import fi.poltsi.vempain.auth.tools.AuthTools;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,99 +31,95 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 public class LoginControllerITC {
 
-	@Container
-	static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine")
-			.withDatabaseName("testdb")
-			.withUsername("testuser")
-			.withPassword("testpass");
-	@Autowired
-	private MockMvc                mockMvc;
-	@Autowired
-	private UserAccountRepository  userAccountRepository;
-	@Autowired
-	private AclRepository          aclRepository;
-	@Autowired
-	private ObjectMapper           objectMapper;
+    @Container
+    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18-alpine").withDatabaseName("testdb")
+        .withUsername("testuser")
+        .withPassword("testpass");
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private UserAccountRepository userAccountRepository;
+    @Autowired
+    private AclRepository aclRepository;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-	@DynamicPropertySource
-	static void overrideProps(DynamicPropertyRegistry registry) {
-		registry.add("spring.datasource.url", postgres::getJdbcUrl);
-		registry.add("spring.datasource.username", postgres::getUsername);
-		registry.add("spring.datasource.password", postgres::getPassword);
-		registry.add("spring.flyway.enabled", () -> "true");
-	}
+    @DynamicPropertySource
+    static void overrideProps(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.flyway.enabled", () -> "true");
+    }
 
-	@BeforeEach
-	void setUp() {
-		if (userAccountRepository.findByLoginName("testuser1")
-								 .isEmpty()) {
-			// Create related ACL with all permissions set to true
-			var acl = fi.poltsi.vempain.auth.entity.Acl.builder()
-													   .userId(1L)
-													   .unitId(null)
-													   .createPrivilege(true)
-													   .readPrivilege(true)
-													   .modifyPrivilege(true)
-													   .deletePrivilege(true)
-													   .build();
-			// Inject and use AclRepository to save the ACL
-			var newAcl = aclRepository.save(acl);
+    @BeforeEach
+    void setUp() {
+        if (userAccountRepository.findByLoginName("testuser1")
+            .isEmpty()) {
+            // Create related ACL with all permissions set to true
+            var acl = fi.poltsi.vempain.auth.entity.Acl.builder()
+                .userId(1L)
+                .unitId(null)
+                .createPrivilege(true)
+                .readPrivilege(true)
+                .modifyPrivilege(true)
+                .deletePrivilege(true)
+                .build();
+            // Inject and use AclRepository to save the ACL
+            var newAcl = aclRepository.save(acl);
 
-			var user = UserAccount.builder()
-								  .loginName("testuser1")
-								  .password(AuthTools.passwordHash("ValidPass123!"))
-								  .name("Test User")
-								  .nick("testnick1")
-								  .email("testuser1@example.com")
-								  .aclId(newAcl.getAclId())
-								  .isPublic(false)
-								  .privacyType(PrivacyType.PRIVATE)
-								  .birthday(Instant.parse("2000-01-01T00:00:00Z"))
-								  .status(AccountStatus.ACTIVE)
-								  .locked(false)
-								  .creator(1L)
-								  .created(Instant.now())
-								  .build();
-			user = userAccountRepository.save(user);
+            var user = UserAccount.builder()
+                .loginName("testuser1")
+                .password(AuthTools.passwordHash("ValidPass123!"))
+                .name("Test User")
+                .nick("testnick1")
+                .email("testuser1@example.com")
+                .aclId(newAcl.getAclId())
+                .isPublic(false)
+                .privacyType(PrivacyType.PRIVATE)
+                .birthday(Instant.parse("2000-01-01T00:00:00Z"))
+                .status(AccountStatus.ACTIVE)
+                .locked(false)
+                .creator(1L)
+                .created(Instant.now())
+                .build();
+            user = userAccountRepository.save(user);
 
-			user.setCreator(user.getId());
-			userAccountRepository.save(user);
-		}
-	}
+            user.setCreator(user.getId());
+            userAccountRepository.save(user);
+        }
+    }
 
-	@Test
-	void loginSucceedsWithCorrectCredentials() throws Exception {
-		LoginRequest request = new LoginRequest();
-		request.setLogin("testuser1");
-		request.setPassword("ValidPass123!");
+    @Test
+    void loginSucceedsWithCorrectCredentials() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setLogin("testuser1");
+        request.setPassword("ValidPass123!");
 
-		mockMvc.perform(post("/login")
-								.contentType("application/json")
-								.content(objectMapper.writeValueAsString(request)))
-			   .andExpect(status().isOk());
-	}
+        mockMvc.perform(post("/login").contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk());
+    }
 
-	@Test
-	void loginFailsWithWrongPassword() throws Exception {
-		LoginRequest request = new LoginRequest();
-		request.setLogin("testuser1");
-		request.setPassword("WrongPassword!");
+    @Test
+    void loginFailsWithWrongPassword() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setLogin("testuser1");
+        request.setPassword("WrongPassword!");
 
-		mockMvc.perform(post("/login")
-								.contentType("application/json")
-								.content(objectMapper.writeValueAsString(request)))
-			   .andExpect(status().isNotFound());
-	}
+        mockMvc.perform(post("/login").contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
 
-	@Test
-	void loginFailsWithNonexistentUser() throws Exception {
-		LoginRequest request = new LoginRequest();
-		request.setLogin("nonexistent");
-		request.setPassword("AnyPassword123!");
+    @Test
+    void loginFailsWithNonexistentUser() throws Exception {
+        LoginRequest request = new LoginRequest();
+        request.setLogin("nonexistent");
+        request.setPassword("AnyPassword123!");
 
-		mockMvc.perform(post("/login")
-								.contentType("application/json")
-								.content(objectMapper.writeValueAsString(request)))
-			   .andExpect(status().isNotFound());
-	}
+        mockMvc.perform(post("/login").contentType("application/json")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+    }
 }

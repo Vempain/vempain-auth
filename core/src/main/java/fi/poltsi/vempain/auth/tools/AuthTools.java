@@ -1,73 +1,81 @@
 package fi.poltsi.vempain.auth.tools;
 
-import fi.poltsi.vempain.auth.exception.VempainAuthenticationException;
-import fi.poltsi.vempain.auth.service.UserDetailsImpl;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import fi.poltsi.vempain.auth.exception.VempainAuthenticationException;
+import fi.poltsi.vempain.auth.service.UserDetailsImpl;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AuthTools {
-	private static final String SPECIAL_PASSWORD_CHARACTERS = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?";
 
-	public static boolean isUserIdCurrentUser(long userId) {
-		var authentication = getAuthentication();
+    private static final String SPECIAL_PASSWORD_CHARACTERS = "!@#$%^&*()_+-=[]{};':\"\\|,.<>/?";
 
-		if (authentication == null) {
-			return false;
-		}
+    public static boolean isUserIdCurrentUser(long userId) {
+        var authentication = getAuthentication();
 
-		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        if (authentication == null) {
+            return false;
+        }
 
-		return userDetails.getId() == userId;
-	}
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-	public static long getCurrentUserId() {
-		var authentication = getAuthentication();
+        return userDetails.getId() == userId;
+    }
 
-		if (authentication == null ||
-			authentication.getPrincipal() instanceof String) {
-			throw new VempainAuthenticationException();
-		}
+    public static long getCurrentUserId() {
+        var authentication = getAuthentication();
 
-		return ((UserDetailsImpl) authentication.getPrincipal()).getId();
-	}
+        if (authentication == null
+            || authentication.getPrincipal() instanceof String) {
+            throw new VempainAuthenticationException();
+        }
 
-	public static boolean passwordCheck(String password) {
-		if (password.length() < 10) {
-			return false;
-		}
+        return ((UserDetailsImpl) authentication.getPrincipal()).getId();
+    }
 
-		boolean hasUppercase        = false;
-		boolean hasLowercase        = false;
-		boolean hasDigit            = false;
-		boolean hasSpecialCharacter = false;
+    public static boolean passwordCheck(String password) {
+        if (password.length() < 10) {
+            return false;
+        }
 
-		for (int index = 0; index < password.length(); index++) {
-			char character = password.charAt(index);
-			hasUppercase |= character >= 'A' && character <= 'Z';
-			hasLowercase |= character >= 'a' && character <= 'z';
-			hasDigit |= character >= '0' && character <= '9';
-			hasSpecialCharacter |= SPECIAL_PASSWORD_CHARACTERS.indexOf(character) >= 0;
-		}
+        boolean hasUppercase = false;
+        boolean hasLowercase = false;
+        boolean hasDigit = false;
+        boolean hasSpecialCharacter = false;
 
-		return hasUppercase && hasLowercase && hasDigit && hasSpecialCharacter;
-	}
+        for (int index = 0; index < password.length(); index++) {
+            char character = password.charAt(index);
+            hasUppercase |= character >= 'A'
+                            && character <= 'Z';
+            hasLowercase |= character >= 'a'
+                            && character <= 'z';
+            hasDigit |= character >= '0'
+                        && character <= '9';
+            hasSpecialCharacter |= SPECIAL_PASSWORD_CHARACTERS.indexOf(character) >= 0;
+        }
 
-	public static String passwordHash(String password) {
-		var passwordEncoder = new BCryptPasswordEncoder(12);
-		return passwordEncoder.encode(password);
-	}
+        return hasUppercase
+               && hasLowercase
+               && hasDigit
+               && hasSpecialCharacter;
+    }
 
-	private static Authentication getAuthentication() {
-		SecurityContext context = SecurityContextHolder.getContext();
-		if (context == null) {
-			return null;
-		}
+    public static String passwordHash(String password) {
+        var passwordEncoder = new BCryptPasswordEncoder(12);
+        return passwordEncoder.encode(password);
+    }
 
-		return context.getAuthentication();
-	}
+    private static Authentication getAuthentication() {
+        SecurityContext context = SecurityContextHolder.getContext();
+        if (context == null) {
+            return null;
+        }
+
+        return context.getAuthentication();
+    }
 }

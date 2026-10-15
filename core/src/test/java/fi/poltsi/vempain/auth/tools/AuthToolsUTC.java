@@ -1,7 +1,7 @@
 package fi.poltsi.vempain.auth.tools;
 
-import fi.poltsi.vempain.auth.exception.VempainAuthenticationException;
-import fi.poltsi.vempain.auth.service.UserDetailsImpl;
+import java.util.Set;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +11,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.core.context.SecurityContextImpl;
 
-import java.util.Set;
+import fi.poltsi.vempain.auth.exception.VempainAuthenticationException;
+import fi.poltsi.vempain.auth.service.UserDetailsImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -21,145 +22,144 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthToolsUTC {
 
-	@BeforeEach
-	void setUp() {
-		SecurityContextHolder.clearContext();
-	}
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.clearContext();
+    }
 
-	@AfterEach
-	void tearDown() {
-		SecurityContextHolder.clearContext();
-	}
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
 
-	// ── passwordCheck ────────────────────────────────────────────────────────────
+    // ── passwordCheck ────────────────────────────────────────────────────────────
 
-	@Test
-	void passwordCheckTooShortFails() {
-		assertFalse(AuthTools.passwordCheck("Aa1!"));
-	}
+    @Test
+    void passwordCheckTooShortFails() {
+        assertFalse(AuthTools.passwordCheck("Aa1!"));
+    }
 
-	@Test
-	void passwordCheckNoUppercaseFails() {
-		assertFalse(AuthTools.passwordCheck("lowercase1!abcdef"));
-	}
+    @Test
+    void passwordCheckNoUppercaseFails() {
+        assertFalse(AuthTools.passwordCheck("lowercase1!abcdef"));
+    }
 
-	@Test
-	void passwordCheckNoLowercaseFails() {
-		assertFalse(AuthTools.passwordCheck("UPPERCASE1!ABCDEF"));
-	}
+    @Test
+    void passwordCheckNoLowercaseFails() {
+        assertFalse(AuthTools.passwordCheck("UPPERCASE1!ABCDEF"));
+    }
 
-	@Test
-	void passwordCheckNoDigitFails() {
-		assertFalse(AuthTools.passwordCheck("Lowercase!ABCDEFG"));
-	}
+    @Test
+    void passwordCheckNoDigitFails() {
+        assertFalse(AuthTools.passwordCheck("Lowercase!ABCDEFG"));
+    }
 
-	@Test
-	void passwordCheckNoSpecialCharFails() {
-		assertFalse(AuthTools.passwordCheck("Lowercase1ABCDEFG"));
-	}
+    @Test
+    void passwordCheckNoSpecialCharFails() {
+        assertFalse(AuthTools.passwordCheck("Lowercase1ABCDEFG"));
+    }
 
-	@Test
-	void passwordCheckValidPasswordOk() {
-		assertTrue(AuthTools.passwordCheck("ValidPass1!"));
-	}
+    @Test
+    void passwordCheckValidPasswordOk() {
+        assertTrue(AuthTools.passwordCheck("ValidPass1!"));
+    }
 
-	// ── passwordHash ─────────────────────────────────────────────────────────────
+    // ── passwordHash ─────────────────────────────────────────────────────────────
 
-	@Test
-	void passwordHashProducesNonNullResult() {
-		String hash = AuthTools.passwordHash("ValidPass1!");
-		assertNotNull(hash);
-		assertTrue(hash.startsWith("$2a$"));
-	}
+    @Test
+    void passwordHashProducesNonNullResult() {
+        String hash = AuthTools.passwordHash("ValidPass1!");
+        assertNotNull(hash);
+        assertTrue(hash.startsWith("$2a$"));
+    }
 
-	// ── getCurrentUserId ─────────────────────────────────────────────────────────
+    // ── getCurrentUserId ─────────────────────────────────────────────────────────
 
-	@Test
-	void getCurrentUserIdWithAuthenticatedUserOk() {
-		setSecurityContext(42L);
-		long userId = AuthTools.getCurrentUserId();
-		assertEquals(42L, userId);
-	}
+    @Test
+    void getCurrentUserIdWithAuthenticatedUserOk() {
+        setSecurityContext(42L);
+        long userId = AuthTools.getCurrentUserId();
+        assertEquals(42L, userId);
+    }
 
-	@Test
-	void getCurrentUserIdWithoutAuthenticationThrows() {
-		// No context set – getAuthentication() returns null → throws
-		assertThrows(VempainAuthenticationException.class, AuthTools::getCurrentUserId);
-	}
+    @Test
+    void getCurrentUserIdWithoutAuthenticationThrows() {
+        // No context set – getAuthentication() returns null → throws
+        assertThrows(VempainAuthenticationException.class, AuthTools::getCurrentUserId);
+    }
 
-	@Test
-	void getCurrentUserIdWithStringPrincipalThrows() {
-		// Spring sometimes puts an anonymousUser string principal
-		var auth = new UsernamePasswordAuthenticationToken("anonymousUser", null);
-		SecurityContextHolder.getContext().setAuthentication(auth);
-		assertThrows(VempainAuthenticationException.class, AuthTools::getCurrentUserId);
-	}
+    @Test
+    void getCurrentUserIdWithStringPrincipalThrows() {
+        // Spring sometimes puts an anonymousUser string principal
+        var auth = new UsernamePasswordAuthenticationToken("anonymousUser", null);
+        SecurityContextHolder.getContext()
+            .setAuthentication(auth);
+        assertThrows(VempainAuthenticationException.class, AuthTools::getCurrentUserId);
+    }
 
-	// ── isUserIdCurrentUser ───────────────────────────────────────────────────────
+    // ── isUserIdCurrentUser ───────────────────────────────────────────────────────
 
-	@Test
-	void isUserIdCurrentUserMatchingIdReturnsTrue() {
-		setSecurityContext(7L);
-		assertTrue(AuthTools.isUserIdCurrentUser(7L));
-	}
+    @Test
+    void isUserIdCurrentUserMatchingIdReturnsTrue() {
+        setSecurityContext(7L);
+        assertTrue(AuthTools.isUserIdCurrentUser(7L));
+    }
 
-	@Test
-	void isUserIdCurrentUserDifferentIdReturnsFalse() {
-		setSecurityContext(7L);
-		assertFalse(AuthTools.isUserIdCurrentUser(99L));
-	}
+    @Test
+    void isUserIdCurrentUserDifferentIdReturnsFalse() {
+        setSecurityContext(7L);
+        assertFalse(AuthTools.isUserIdCurrentUser(99L));
+    }
 
-	@Test
-	void isUserIdCurrentUserWithNoAuthReturnsFalse() {
-		// No auth set → returns false
-		assertFalse(AuthTools.isUserIdCurrentUser(1L));
-	}
+    @Test
+    void isUserIdCurrentUserWithNoAuthReturnsFalse() {
+        // No auth set → returns false
+        assertFalse(AuthTools.isUserIdCurrentUser(1L));
+    }
 
-	// ── helpers ──────────────────────────────────────────────────────────────────
+    // ── helpers ──────────────────────────────────────────────────────────────────
 
-	private void setSecurityContext(long userId) {
-		var userDetails = new UserDetailsImpl(userId, "login", "nick", "email@test.com", "password",
-				Set.of(), null);
-		var auth = new UsernamePasswordAuthenticationToken(userDetails, null);
-		SecurityContextHolder.getContext().setAuthentication(auth);
-	}
+    private void setSecurityContext(long userId) {
+        var userDetails = new UserDetailsImpl(userId, "login", "nick", "email@test.com", "password", Set.of(), null);
+        var auth = new UsernamePasswordAuthenticationToken(userDetails, null);
+        SecurityContextHolder.getContext()
+            .setAuthentication(auth);
+    }
 
+    // ── missing security context ─────────────────────────────────────────────────
 
-	// ── missing security context ─────────────────────────────────────────────────
+    @Test
+    void missingSecurityContextIsTreatedAsUnauthenticated() {
+        var defaultStrategy = SecurityContextHolder.getContextHolderStrategy();
+        try {
+            SecurityContextHolder.setContextHolderStrategy(new NullContextStrategy());
 
-	@Test
-	void missingSecurityContextIsTreatedAsUnauthenticated() {
-		var defaultStrategy = SecurityContextHolder.getContextHolderStrategy();
-		try {
-			SecurityContextHolder.setContextHolderStrategy(new NullContextStrategy());
+            assertFalse(AuthTools.isUserIdCurrentUser(1L));
+            assertThrows(VempainAuthenticationException.class, AuthTools::getCurrentUserId);
+        } finally {
+            SecurityContextHolder.setContextHolderStrategy(defaultStrategy);
+        }
+    }
 
-			assertFalse(AuthTools.isUserIdCurrentUser(1L));
-			assertThrows(VempainAuthenticationException.class, AuthTools::getCurrentUserId);
-		} finally {
-			SecurityContextHolder.setContextHolderStrategy(defaultStrategy);
-		}
-	}
+    /**
+     * A holder strategy without any context, which the default thread-local strategy never produces.
+     */
+    private static class NullContextStrategy implements SecurityContextHolderStrategy {
 
-	/**
-	 * A holder strategy without any context, which the default thread-local strategy never produces.
-	 */
-	private static class NullContextStrategy implements SecurityContextHolderStrategy {
-		@Override
-		public void clearContext() {
-		}
+        @Override
+        public void clearContext() {}
 
-		@Override
-		public SecurityContext getContext() {
-			return null;
-		}
+        @Override
+        public SecurityContext getContext() {
+            return null;
+        }
 
-		@Override
-		public void setContext(SecurityContext context) {
-		}
+        @Override
+        public void setContext(SecurityContext context) {}
 
-		@Override
-		public SecurityContext createEmptyContext() {
-			return new SecurityContextImpl();
-		}
-	}
+        @Override
+        public SecurityContext createEmptyContext() {
+            return new SecurityContextImpl();
+        }
+    }
 }

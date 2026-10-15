@@ -6,6 +6,6 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootConfiguration
 @EnableAutoConfiguration
-@Import({TestServiceSecurityConfig.class, TestServiceController.class})
+@Import({ TestServiceSecurityConfig.class, TestServiceController.class })
 public class TestServiceApplication {
 }

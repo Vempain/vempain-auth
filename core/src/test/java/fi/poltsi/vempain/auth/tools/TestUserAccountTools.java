@@ -1,32 +1,33 @@
 package fi.poltsi.vempain.auth.tools;
 
+import java.security.SecureRandom;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.security.SecureRandom;
-
 public class TestUserAccountTools {
-	private static final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
 
-	public static String encryptPassword(String password) {
-		var pwdEncryptor = new BCryptPasswordEncoder(12);
-		return pwdEncryptor.encode(password);
-	}
+    private static final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
 
-	public static String randomLongString() {
-		return RandomStringUtils.secure()
-								.nextAlphanumeric(14);
-	}
+    public static String encryptPassword(String password) {
+        var pwdEncryptor = new BCryptPasswordEncoder(12);
+        return pwdEncryptor.encode(password);
+    }
 
-	public static String randomPassword(int length) {
-		SecureRandom  secureRandom  = new SecureRandom();
-		StringBuilder stringBuilder = new StringBuilder(length);
+    public static String randomLongString() {
+        return RandomStringUtils.secure()
+            .nextAlphanumeric(14);
+    }
 
-		for (int i = 0; i < length; i++) {
-			int randomIndex = secureRandom.nextInt(CHAR_POOL.length());
-			stringBuilder.append(CHAR_POOL.charAt(randomIndex));
-		}
+    public static String randomPassword(int length) {
+        SecureRandom secureRandom = new SecureRandom();
+        StringBuilder stringBuilder = new StringBuilder(length);
 
-		return stringBuilder.toString();
-	}
+        for (int i = 0; i < length; i++) {
+            int randomIndex = secureRandom.nextInt(CHAR_POOL.length());
+            stringBuilder.append(CHAR_POOL.charAt(randomIndex));
+        }
+
+        return stringBuilder.toString();
+    }
 }

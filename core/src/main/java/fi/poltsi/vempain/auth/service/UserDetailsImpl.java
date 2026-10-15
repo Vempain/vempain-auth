@@ -1,14 +1,5 @@
 package fi.poltsi.vempain.auth.service;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import fi.poltsi.vempain.auth.entity.Unit;
-import fi.poltsi.vempain.auth.entity.UserAccount;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
 import java.io.Serial;
 import java.util.Collection;
 import java.util.List;
@@ -16,98 +7,105 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import fi.poltsi.vempain.auth.entity.Unit;
+import fi.poltsi.vempain.auth.entity.UserAccount;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
 @Getter
 @Slf4j
 public class UserDetailsImpl implements UserDetails {
-	@Serial
-	private static final long serialVersionUID = 1L;
-	private final Long id;
-	private final String loginName;
-	private final String nickName;
-	private final String    email;
-	private final Set<Unit> units;
 
-	@JsonIgnore
-	private final String password;
+    @Serial
+    private static final long serialVersionUID = 1L;
+    private final Long id;
+    private final String loginName;
+    private final String nickName;
+    private final String email;
+    private final Set<Unit> units;
 
-	private final Collection<? extends GrantedAuthority> authorities;
+    @JsonIgnore
+    private final String password;
 
-	public UserDetailsImpl(Long id, String loginName, String nickName, String email, String password, Set<Unit> units,
-						   Collection<? extends GrantedAuthority> authorities) {
-		this.id          = id;
-		this.loginName   = loginName;
-		this.nickName    = nickName;
-		this.email       = email;
-		this.password    = password;
-		this.units       = units;
-		this.authorities = authorities;
-	}
+    private final Collection<? extends GrantedAuthority> authorities;
 
-	public static UserDetailsImpl build(UserAccount userAccount) {
-		return build(userAccount, userAccount.getUnits());
-	}
+    public UserDetailsImpl(Long id, String loginName, String nickName, String email, String password, Set<Unit> units,
+            Collection<? extends GrantedAuthority> authorities) {
+        this.id = id;
+        this.loginName = loginName;
+        this.nickName = nickName;
+        this.email = email;
+        this.password = password;
+        this.units = units;
+        this.authorities = authorities;
+    }
 
-	/**
-	 * Builds the principal with the given effective units (direct memberships plus the units containing them).
-	 */
-	public static UserDetailsImpl build(UserAccount userAccount, Set<Unit> units) {
-		List<GrantedAuthority> authorities = (units == null ? Set.<Unit>of() : units).stream()
-																					 .map(unit -> new SimpleGrantedAuthority(unit.getName()))
-																					 .collect(Collectors.toList());
+    public static UserDetailsImpl build(UserAccount userAccount) {
+        return build(userAccount, userAccount.getUnits());
+    }
 
-		return new UserDetailsImpl(
-				userAccount.getId(),
-				userAccount.getLoginName(),
-				userAccount.getNick(),
-				userAccount.getEmail(),
-				userAccount.getPassword(),
-				units,
-				authorities);
-	}
+    /**
+     * Builds the principal with the given effective units (direct memberships plus the units containing them).
+     */
+    public static UserDetailsImpl build(UserAccount userAccount, Set<Unit> units) {
+        List<GrantedAuthority> authorities = (units == null ? Set.<Unit>of() : units).stream()
+            .map(unit -> new SimpleGrantedAuthority(unit.getName()))
+            .collect(Collectors.toList());
 
-	@Override
-	public String getUsername() {
-		return loginName;
-	}
+        return new UserDetailsImpl(userAccount.getId(), userAccount.getLoginName(), userAccount.getNick(), userAccount.getEmail(), userAccount.getPassword(),
+                units, authorities);
+    }
 
-	@Override
-	public boolean isAccountNonExpired() {
-		// TODO Implement
-		return true;
-	}
+    @Override
+    public String getUsername() {
+        return loginName;
+    }
 
-	@Override
-	public boolean isAccountNonLocked() {
-		// TODO Implement
-		return true;
-	}
+    @Override
+    public boolean isAccountNonExpired() {
+        // TODO Implement
+        return true;
+    }
 
-	@Override
-	public boolean isCredentialsNonExpired() {
-		// TODO Implement
-		return true;
-	}
+    @Override
+    public boolean isAccountNonLocked() {
+        // TODO Implement
+        return true;
+    }
 
-	@Override
-	public boolean isEnabled() {
-		// TODO Implement
-		return true;
-	}
+    @Override
+    public boolean isCredentialsNonExpired() {
+        // TODO Implement
+        return true;
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		UserDetailsImpl user = (UserDetailsImpl) o;
-		return Objects.equals(id, user.id);
-	}
+    @Override
+    public boolean isEnabled() {
+        // TODO Implement
+        return true;
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(id, loginName, nickName, email, password, authorities);
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null
+            || getClass() != o.getClass()) {
+            return false;
+        }
+        UserDetailsImpl user = (UserDetailsImpl) o;
+        return Objects.equals(id, user.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, loginName, nickName, email, password, authorities);
+    }
 }

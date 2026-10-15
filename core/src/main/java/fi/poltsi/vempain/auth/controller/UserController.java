@@ -1,5 +1,12 @@
 package fi.poltsi.vempain.auth.controller;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
 import fi.poltsi.vempain.auth.api.request.PagedRequest;
 import fi.poltsi.vempain.auth.api.request.UserRequest;
 import fi.poltsi.vempain.auth.api.response.PagedResponse;
@@ -9,12 +16,6 @@ import fi.poltsi.vempain.auth.security.AdministrationGuard;
 import fi.poltsi.vempain.auth.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 /**
  * User account management hosted by every service that includes {@code vempain-auth-core}; it manages that service's own user base.
@@ -23,45 +24,47 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 public class UserController implements UserAPI {
-	private final UserService         userService;
-	private final AdministrationGuard administrationGuard;
 
-	@Override
-	public ResponseEntity<List<UserResponse>> getUsers() {
-		return ResponseEntity.ok(userService.findAllResponses());
-	}
+    private final UserService userService;
+    private final AdministrationGuard administrationGuard;
 
-	@Override
-	public ResponseEntity<PagedResponse<UserResponse>> getPagedUsers(PagedRequest request) {
-		return ResponseEntity.ok(userService.findPaged(request));
-	}
+    @Override
+    public ResponseEntity<List<UserResponse>> getUsers() {
+        return ResponseEntity.ok(userService.findAllResponses());
+    }
 
-	@Override
-	public ResponseEntity<UserResponse> findById(Long userId) {
-		if (userId == null || userId < 0) {
-			log.error("Invalid user ID: {}", userId);
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Malformed parameter");
-		}
+    @Override
+    public ResponseEntity<PagedResponse<UserResponse>> getPagedUsers(PagedRequest request) {
+        return ResponseEntity.ok(userService.findPaged(request));
+    }
 
-		var userResponse = userService.findUserResponseById(userId);
+    @Override
+    public ResponseEntity<UserResponse> findById(Long userId) {
+        if (userId == null
+            || userId < 0) {
+            log.error("Invalid user ID: {}", userId);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Malformed parameter");
+        }
 
-		if (userResponse == null) {
-			log.error("Could not find any user by id {}", userId);
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No user was found with given ID");
-		}
+        var userResponse = userService.findUserResponseById(userId);
 
-		return ResponseEntity.ok(userResponse);
-	}
+        if (userResponse == null) {
+            log.error("Could not find any user by id {}", userId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No user was found with given ID");
+        }
 
-	@Override
-	public ResponseEntity<UserResponse> addUser(UserRequest userRequest) {
-		administrationGuard.requireAdministrator();
-		return ResponseEntity.ok(userService.createUser(userRequest));
-	}
+        return ResponseEntity.ok(userResponse);
+    }
 
-	@Override
-	public ResponseEntity<UserResponse> updateUser(Long userId, UserRequest userRequest) {
-		administrationGuard.requireAdministrator();
-		return ResponseEntity.ok(userService.updateUser(userId, userRequest));
-	}
+    @Override
+    public ResponseEntity<UserResponse> addUser(UserRequest userRequest) {
+        administrationGuard.requireAdministrator();
+        return ResponseEntity.ok(userService.createUser(userRequest));
+    }
+
+    @Override
+    public ResponseEntity<UserResponse> updateUser(Long userId, UserRequest userRequest) {
+        administrationGuard.requireAdministrator();
+        return ResponseEntity.ok(userService.updateUser(userId, userRequest));
+    }
 }

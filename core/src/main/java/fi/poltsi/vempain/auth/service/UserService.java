@@ -1,5 +1,18 @@
 package fi.poltsi.vempain.auth.service;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import fi.poltsi.vempain.auth.api.request.AclRequest;
 import fi.poltsi.vempain.auth.api.request.PagedRequest;
 import fi.poltsi.vempain.auth.api.request.UserRequest;
@@ -17,261 +30,253 @@ import fi.poltsi.vempain.auth.security.AclAuthorizationService;
 import fi.poltsi.vempain.auth.tools.AuthTools;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
-	private final UserAccountRepository userAccountRepository;
-	private final AclRepository  aclRepository;
-	private final UnitRepository unitRepository;
-	private final AclAuthorizationService aclAuthorizationService;
 
-	public Iterable<UserAccount> findAll() {
-		return userAccountRepository.findAll();
-	}
+    private final UserAccountRepository userAccountRepository;
+    private final AclRepository aclRepository;
+    private final UnitRepository unitRepository;
+    private final AclAuthorizationService aclAuthorizationService;
 
-	public UserResponse findUserResponseById(Long userId) {
-		var optionalUser = findById(userId);
-		var userResponse = optionalUser.map(this::toResponse)
-		                               .orElse(null);
+    public Iterable<UserAccount> findAll() {
+        return userAccountRepository.findAll();
+    }
 
-		if (userResponse != null) {
-			populateWithUnits(optionalUser.get(), userResponse);
-		}
+    public UserResponse findUserResponseById(Long userId) {
+        var optionalUser = findById(userId);
+        var userResponse = optionalUser.map(this::toResponse)
+            .orElse(null);
 
-		return userResponse;
-	}
+        if (userResponse != null) {
+            populateWithUnits(optionalUser.get(), userResponse);
+        }
 
-	/**
-	 * Every user with its direct unit memberships (no ACL rows).
-	 */
-	public List<UserResponse> findAllResponses() {
-		var responses = new ArrayList<UserResponse>();
-		userAccountRepository.findAll()
-							 .forEach(user -> {
-								 var response = toResponse(user);
-								 populateWithUnits(user, response);
-								 responses.add(response);
-							 });
-		return responses;
-	}
+        return userResponse;
+    }
 
-	private UserResponse toResponse(UserAccount user) {
-		if (aclAuthorizationService.canRead(user.getAclId())) {
-			var response = user.getUserResponse();
-			populateWithAcl(user.getAclId(), response);
-			return response;
-		}
+    /**
+     * Every user with its direct unit memberships (no ACL rows).
+     */
+    public List<UserResponse> findAllResponses() {
+        var responses = new ArrayList<UserResponse>();
+        userAccountRepository.findAll()
+            .forEach(user -> {
+                var response = toResponse(user);
+                populateWithUnits(user, response);
+                responses.add(response);
+            });
+        return responses;
+    }
 
-		return UserResponse.builder()
-						   .id(user.getId())
-						   .nick(user.getNick())
-						   .unitIds(List.of())
-						   .build();
-	}
+    private UserResponse toResponse(UserAccount user) {
+        if (aclAuthorizationService.canRead(user.getAclId())) {
+            var response = user.getUserResponse();
+            populateWithAcl(user.getAclId(), response);
+            return response;
+        }
 
-	/**
-	 * A page of users sorted by name (or id with {@code sort_by=id}) and filtered by name or login name through {@code search}.
-	 */
-	public PagedResponse<UserResponse> findPaged(PagedRequest request) {
-		return PagingTools.page(findAllResponses(), request, user -> java.util.Arrays.asList(user.getName(), user.getLoginName()),
-								UserResponse::getName, UserResponse::getId);
-	}
+        return UserResponse.builder()
+            .id(user.getId())
+            .nick(user.getNick())
+            .unitIds(List.of())
+            .build();
+    }
 
-	private void populateWithUnits(UserAccount user, UserResponse userResponse) {
-		userResponse.setUnitIds(user.getUnits() == null ? List.of() : user.getUnits()
-																		  .stream()
-																		  .map(Unit::getId)
-																		  .sorted()
-																		  .toList());
-	}
+    /**
+     * A page of users sorted by name (or id with {@code sort_by=id}) and filtered by name or login name through {@code search}.
+     */
+    public PagedResponse<UserResponse> findPaged(PagedRequest request) {
+        return PagingTools.page(findAllResponses(), request, user -> java.util.Arrays.asList(user.getName(), user.getLoginName()), UserResponse::getName,
+                UserResponse::getId);
+    }
 
-	/**
-	 * Replaces the direct unit memberships of a user; a null list leaves them untouched.
-	 *
-	 * @throws ResponseStatusException 400 for an unknown unit
-	 */
-	private void applyUnits(UserAccount user, List<Long> unitIds) {
-		if (unitIds == null) {
-			return;
-		}
-		var units = new HashSet<Unit>();
-		for (var unitId : new LinkedHashSet<>(unitIds)) {
-			if (unitId == null) {
-				continue;
-			}
-			units.add(unitRepository.findById(unitId)
-									.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown unit " + unitId)));
-		}
-		user.setUnits(units);
-	}
+    private void populateWithUnits(UserAccount user, UserResponse userResponse) {
+        userResponse.setUnitIds(user.getUnits() == null ? List.of()
+                : user.getUnits()
+                    .stream()
+                    .map(Unit::getId)
+                    .sorted()
+                    .toList());
+    }
 
-	@Transactional(propagation = Propagation.REQUIRED)
-	public UserResponse createUser(UserRequest userRequest) {
-		// We need to manually handle the storing of the ACL since it is not a part of the user entity
-		var aclId = aclRepository.getNextAclId();
-		try {
-			saveAclRequests(aclId, userRequest.getAcls());
-		} catch (VempainAclException e) {
-			log.warn("Failed to save ACLs for new user: {}", userRequest.getLoginName());
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ACL request list is corrupted");
-		}
+    /**
+     * Replaces the direct unit memberships of a user; a null list leaves them untouched.
+     *
+     * @throws ResponseStatusException 400 for an unknown unit
+     */
+    private void applyUnits(UserAccount user, List<Long> unitIds) {
+        if (unitIds == null) {
+            return;
+        }
+        var units = new HashSet<Unit>();
+        for (var unitId : new LinkedHashSet<>(unitIds)) {
+            if (unitId == null) {
+                continue;
+            }
+            units.add(unitRepository.findById(unitId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown unit " + unitId)));
+        }
+        user.setUnits(units);
+    }
 
-		if (!AuthTools.passwordCheck(userRequest.getPassword())) {
-			log.error("Given password '{}' is not valid as it does not fulfill all the requirements for complexity", userRequest.getPassword());
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is not valid");
-		}
+    @Transactional(propagation = Propagation.REQUIRED)
+    public UserResponse createUser(UserRequest userRequest) {
+        // We need to manually handle the storing of the ACL since it is not a part of the user entity
+        var aclId = aclRepository.getNextAclId();
+        try {
+            saveAclRequests(aclId, userRequest.getAcls());
+        } catch (VempainAclException e) {
+            log.warn("Failed to save ACLs for new user: {}", userRequest.getLoginName());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ACL request list is corrupted");
+        }
 
-		var passwordHash = AuthTools.passwordHash(userRequest.getPassword());
+        if (!AuthTools.passwordCheck(userRequest.getPassword())) {
+            log.error("Given password '{}' is not valid as it does not fulfill all the requirements for complexity", userRequest.getPassword());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is not valid");
+        }
 
-		var user = UserAccount.builder()
-							  .privacyType(userRequest.getPrivacyType())
-							  .isPublic(userRequest.isPrivateUser())
-							  .name(userRequest.getName())
-							  .nick(userRequest.getNick())
-							  .loginName(userRequest.getLoginName())
-							  .email(userRequest.getEmail())
-							  .street(userRequest.getStreet())
-							  .pob(userRequest.getPob())
-							  .birthday(userRequest.getBirthday())
-							  .description(userRequest.getDescription())
-							  .password(passwordHash)
-							  .status(fi.poltsi.vempain.auth.api.AccountStatus.REGISTERED)
-							  .aclId(aclId)
-							  .creator(AuthTools.getCurrentUserId())
-							  .created(Instant.now())
-							  .build();
-		applyUnits(user, userRequest.getUnitIds());
+        var passwordHash = AuthTools.passwordHash(userRequest.getPassword());
 
-		var newUser = userAccountRepository.save(user);
-		var userResponse = newUser.getUserResponse();
-		populateWithAcl(aclId, userResponse);
-		populateWithUnits(newUser, userResponse);
-		return userResponse;
-	}
+        var user = UserAccount.builder()
+            .privacyType(userRequest.getPrivacyType())
+            .isPublic(userRequest.isPrivateUser())
+            .name(userRequest.getName())
+            .nick(userRequest.getNick())
+            .loginName(userRequest.getLoginName())
+            .email(userRequest.getEmail())
+            .street(userRequest.getStreet())
+            .pob(userRequest.getPob())
+            .birthday(userRequest.getBirthday())
+            .description(userRequest.getDescription())
+            .password(passwordHash)
+            .status(fi.poltsi.vempain.auth.api.AccountStatus.REGISTERED)
+            .aclId(aclId)
+            .creator(AuthTools.getCurrentUserId())
+            .created(Instant.now())
+            .build();
+        applyUnits(user, userRequest.getUnitIds());
 
-	@Transactional
-	public UserResponse updateUser(Long userId, UserRequest userRequest) {
-		var optionalUser = findById(userId);
+        var newUser = userAccountRepository.save(user);
+        var userResponse = newUser.getUserResponse();
+        populateWithAcl(aclId, userResponse);
+        populateWithUnits(newUser, userResponse);
+        return userResponse;
+    }
 
-		if (optionalUser.isEmpty()) {
-			log.error("Could not find any user by id {}", userId);
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No user was found with given ID");
-		}
+    @Transactional
+    public UserResponse updateUser(Long userId, UserRequest userRequest) {
+        var optionalUser = findById(userId);
 
-		var user  = optionalUser.get();
-		var aclId = user.getAclId();
+        if (optionalUser.isEmpty()) {
+            log.error("Could not find any user by id {}", userId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No user was found with given ID");
+        }
 
-		try {
-			saveAclRequests(aclId, userRequest.getAcls());
-		} catch (VempainAclException e) {
-			log.warn("Failed to save ACLs for new user: {}", userRequest.getLoginName());
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ACL request list is corrupted");
-		}
+        var user = optionalUser.get();
+        var aclId = user.getAclId();
 
-		user.setBirthday(userRequest.getBirthday());
-		user.setDescription(userRequest.getDescription());
-		user.setEmail(userRequest.getEmail());
-		user.setLocked(userRequest.isLocked());
-		user.setLoginName(userRequest.getLoginName());
-		user.setName(userRequest.getName());
-		user.setNick(userRequest.getNick());
-		user.setPob(userRequest.getPob());
-		user.setPrivacyType(userRequest.getPrivacyType());
-		user.setPublic(userRequest.isPrivateUser());
-		user.setStreet(userRequest.getStreet());
+        try {
+            saveAclRequests(aclId, userRequest.getAcls());
+        } catch (VempainAclException e) {
+            log.warn("Failed to save ACLs for new user: {}", userRequest.getLoginName());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ACL request list is corrupted");
+        }
 
-		if (userRequest.getPassword() != null && !userRequest.getPassword()
-		                                                     .isBlank()) {
-			if (!AuthTools.passwordCheck(userRequest.getPassword())) {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is not valid");
-			}
-			user.setPassword(AuthTools.passwordHash(userRequest.getPassword()));
-		}
+        user.setBirthday(userRequest.getBirthday());
+        user.setDescription(userRequest.getDescription());
+        user.setEmail(userRequest.getEmail());
+        user.setLocked(userRequest.isLocked());
+        user.setLoginName(userRequest.getLoginName());
+        user.setName(userRequest.getName());
+        user.setNick(userRequest.getNick());
+        user.setPob(userRequest.getPob());
+        user.setPrivacyType(userRequest.getPrivacyType());
+        user.setPublic(userRequest.isPrivateUser());
+        user.setStreet(userRequest.getStreet());
 
-		applyUnits(user, userRequest.getUnitIds());
-		user.setModifier(AuthTools.getCurrentUserId());
-		user.setModified(Instant.now());
+        if (userRequest.getPassword() != null
+            && !userRequest.getPassword()
+                .isBlank()) {
+            if (!AuthTools.passwordCheck(userRequest.getPassword())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is not valid");
+            }
+            user.setPassword(AuthTools.passwordHash(userRequest.getPassword()));
+        }
 
-		var newUser = userAccountRepository.save(user);
-		var userResponse = newUser.getUserResponse();
-		populateWithAcl(aclId, userResponse);
-		populateWithUnits(newUser, userResponse);
-		return userResponse;
-	}
+        applyUnits(user, userRequest.getUnitIds());
+        user.setModifier(AuthTools.getCurrentUserId());
+        user.setModified(Instant.now());
 
-	public Optional<UserAccount> findById(Long userId) {
-		return userAccountRepository.findById(userId);
-	}
+        var newUser = userAccountRepository.save(user);
+        var userResponse = newUser.getUserResponse();
+        populateWithAcl(aclId, userResponse);
+        populateWithUnits(newUser, userResponse);
+        return userResponse;
+    }
 
-	public Optional<UserAccount> findByLogin(String login) {
-		return userAccountRepository.findByLoginName(login);
-	}
+    public Optional<UserAccount> findById(Long userId) {
+        return userAccountRepository.findById(userId);
+    }
 
-	// TODO We should instead use a status field and mark the user as closed instead of deleting it since the user ID is located in many places
-	@Transactional(propagation = Propagation.REQUIRED)
-	public void lockUser(long userId) {
-		userAccountRepository.lockByUserId(userId);
-	}
+    public Optional<UserAccount> findByLogin(String login) {
+        return userAccountRepository.findByLoginName(login);
+    }
 
-	public UserAccount save(UserAccount userAccount) {
-		return userAccountRepository.save(userAccount);
-	}
+    // TODO We should instead use a status field and mark the user as closed instead of deleting it since the user ID is located in many places
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void lockUser(long userId) {
+        userAccountRepository.lockByUserId(userId);
+    }
 
-	private void populateWithAcl(long aclId, UserResponse userResponse) {
-		var acls         = aclRepository.getAclByAclId(aclId);
-		var aclResponses = new ArrayList<AclResponse>();
-		for (var acl : acls) {
-			aclResponses.add(acl.toResponse());
-		}
+    public UserAccount save(UserAccount userAccount) {
+        return userAccountRepository.save(userAccount);
+    }
 
-		userResponse.setAcls(aclResponses);
-	}
+    private void populateWithAcl(long aclId, UserResponse userResponse) {
+        var acls = aclRepository.getAclByAclId(aclId);
+        var aclResponses = new ArrayList<AclResponse>();
+        for (var acl : acls) {
+            aclResponses.add(acl.toResponse());
+        }
 
-	@Transactional(propagation = Propagation.REQUIRED)
-	public void saveAclRequests(Long aclId, List<AclRequest> acls) throws VempainAclException {
-		if (aclId == null || aclId < 1) {
-			log.error("ACL ID is invalid: {}", aclId);
-			throw new VempainAclException("New ACL ID is invalid");
-		}
+        userResponse.setAcls(aclResponses);
+    }
 
-		if (acls == null || acls.isEmpty()) {
-			log.error("ACL array is empty");
-			throw new VempainAclException("No ACL to save");
-		}
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void saveAclRequests(Long aclId, List<AclRequest> acls) throws VempainAclException {
+        if (aclId == null
+            || aclId < 1) {
+            log.error("ACL ID is invalid: {}", aclId);
+            throw new VempainAclException("New ACL ID is invalid");
+        }
 
-		List<Acl> oldAcls = aclRepository.getAclByAclId(aclId);
+        if (acls == null
+            || acls.isEmpty()) {
+            log.error("ACL array is empty");
+            throw new VempainAclException("No ACL to save");
+        }
 
-		if (!oldAcls.isEmpty()) {
-			log.debug("ACL ID {} already exists, deleting old ACLs", aclId);
-			aclRepository.deleteAclsByAclId(aclId);
-		}
+        List<Acl> oldAcls = aclRepository.getAclByAclId(aclId);
 
-		for (AclRequest aclRequest : acls) {
+        if (!oldAcls.isEmpty()) {
+            log.debug("ACL ID {} already exists, deleting old ACLs", aclId);
+            aclRepository.deleteAclsByAclId(aclId);
+        }
 
-			var acl = Acl.builder()
-						 .aclId(aclId)
-						 .userId(aclRequest.getUser())
-						 .unitId(aclRequest.getUnit())
-						 .readPrivilege(aclRequest.isReadPrivilege())
-						 .createPrivilege(aclRequest.isCreatePrivilege())
-						 .modifyPrivilege(aclRequest.isModifyPrivilege())
-						 .deletePrivilege(aclRequest.isDeletePrivilege())
-						 .build();
-			aclRepository.save(acl);
-		}
-	}
+        for (AclRequest aclRequest : acls) {
+            var acl = Acl.builder()
+                .aclId(aclId)
+                .userId(aclRequest.getUser())
+                .unitId(aclRequest.getUnit())
+                .readPrivilege(aclRequest.isReadPrivilege())
+                .createPrivilege(aclRequest.isCreatePrivilege())
+                .modifyPrivilege(aclRequest.isModifyPrivilege())
+                .deletePrivilege(aclRequest.isDeletePrivilege())
+                .build();
+            aclRepository.save(acl);
+        }
+    }
 }

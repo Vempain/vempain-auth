@@ -5,6 +5,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
 import tools.jackson.databind.ObjectMapper;
 
 @EnableAutoConfiguration
@@ -12,8 +13,9 @@ import tools.jackson.databind.ObjectMapper;
 @EnableJpaRepositories(basePackages = "fi.poltsi.vempain.auth.repository")
 @EntityScan(basePackages = "fi.poltsi.vempain.auth.entity")
 public class TestApplicationConfig {
-	@Bean
-	public ObjectMapper objectMapper() {
-		return new ObjectMapper();
-	}
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
 }

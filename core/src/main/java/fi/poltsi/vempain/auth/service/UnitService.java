@@ -1,5 +1,16 @@
 package fi.poltsi.vempain.auth.service;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import fi.poltsi.vempain.auth.api.request.AclRequest;
 import fi.poltsi.vempain.auth.api.request.PagedRequest;
 import fi.poltsi.vempain.auth.api.request.UnitRequest;
@@ -17,269 +28,263 @@ import fi.poltsi.vempain.auth.repository.UserAccountRepository;
 import fi.poltsi.vempain.auth.tools.AuthTools;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UnitService {
-	private final UnitRepository        unitRepository;
-	private final AclRepository         aclRepository;
-	private final UserAccountRepository userAccountRepository;
-	private final UnitMembershipService unitMembershipService;
 
-	public Iterable<Unit> findAll() {
-		return unitRepository.findAll();
-	}
+    private final UnitRepository unitRepository;
+    private final AclRepository aclRepository;
+    private final UserAccountRepository userAccountRepository;
+    private final UnitMembershipService unitMembershipService;
 
-	public UnitResponse findById(Long unitId) throws VempainEntityNotFoundException {
-		var optionalUnit = unitRepository.findById(unitId);
+    public Iterable<Unit> findAll() {
+        return unitRepository.findAll();
+    }
 
-		if (optionalUnit.isEmpty()) {
-			log.error("Tried to fetch a non-existing unit ID: {}", unitId);
-			throw new VempainEntityNotFoundException("Unit not found for retrieval", "Unit");
-		}
+    public UnitResponse findById(Long unitId) throws VempainEntityNotFoundException {
+        var optionalUnit = unitRepository.findById(unitId);
 
-		var unitResponse = optionalUnit.get()
-									   .getUnitResponse();
-		populateWithAcl(optionalUnit.get()
-									.getAclId(), unitResponse);
-		populateWithMembers(unitResponse);
-		return unitResponse;
-	}
+        if (optionalUnit.isEmpty()) {
+            log.error("Tried to fetch a non-existing unit ID: {}", unitId);
+            throw new VempainEntityNotFoundException("Unit not found for retrieval", "Unit");
+        }
 
-	/**
-	 * Every unit with its direct member ids (no ACL rows).
-	 */
-	public List<UnitResponse> findAllResponses() {
-		var responses = new ArrayList<UnitResponse>();
-		unitRepository.findAll()
-					  .forEach(unit -> {
-						  var response = unit.getUnitResponse();
-						  populateWithMembers(response);
-						  responses.add(response);
-					  });
-		return responses;
-	}
+        var unitResponse = optionalUnit.get()
+            .getUnitResponse();
+        populateWithAcl(optionalUnit.get()
+            .getAclId(), unitResponse);
+        populateWithMembers(unitResponse);
+        return unitResponse;
+    }
 
-	/**
-	 * A page of units sorted by name (or id with {@code sort_by=id}) and filtered by name through {@code search}.
-	 */
-	public PagedResponse<UnitResponse> findPaged(PagedRequest request) {
-		return PagingTools.page(findAllResponses(), request, unit -> List.of(unit.getName()), UnitResponse::getName, UnitResponse::getId);
-	}
+    /**
+     * Every unit with its direct member ids (no ACL rows).
+     */
+    public List<UnitResponse> findAllResponses() {
+        var responses = new ArrayList<UnitResponse>();
+        unitRepository.findAll()
+            .forEach(unit -> {
+                var response = unit.getUnitResponse();
+                populateWithMembers(response);
+                responses.add(response);
+            });
+        return responses;
+    }
 
-	/**
-	 * Fills the direct member user and unit ids of the unit.
-	 */
-	public void populateWithMembers(UnitResponse unitResponse) {
-		unitResponse.setUserIds(userAccountRepository.findByUnits_Id(unitResponse.getId())
-													 .stream()
-													 .map(UserAccount::getId)
-													 .sorted()
-													 .toList());
-		unitResponse.setUnitIds(unitMembershipService.findChildUnitIds(unitResponse.getId())
-													 .stream()
-													 .sorted()
-													 .toList());
-	}
+    /**
+     * A page of units sorted by name (or id with {@code sort_by=id}) and filtered by name through {@code search}.
+     */
+    public PagedResponse<UnitResponse> findPaged(PagedRequest request) {
+        return PagingTools.page(findAllResponses(), request, unit -> List.of(unit.getName()), UnitResponse::getName, UnitResponse::getId);
+    }
 
-	/**
-	 * Replaces the direct members of a unit. Null lists leave that kind of membership untouched. Every member must exist, a unit can not
-	 * be its own member and no chain of units may lead back to the unit (the backstop for the frontend's own check).
-	 *
-	 * @throws ResponseStatusException 400 for an unknown member or a circular membership
-	 */
-	@Transactional(propagation = Propagation.REQUIRED)
-	public void updateMembers(long unitId, List<Long> userIds, List<Long> childUnitIds) {
-		if (childUnitIds != null) {
-			unitMembershipService.lockHierarchyMutations();
-			var requested = new LinkedHashSet<>(childUnitIds);
-			requested.remove(null);
-			if (requested.contains(unitId)) {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A unit can not be a member of itself");
-			}
-			for (var childId : requested) {
-				if (unitRepository.findById(childId)
-								  .isEmpty()) {
-					throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown member unit " + childId);
-				}
-			}
-			if (unitMembershipService.wouldCreateCycle(unitId, requested)) {
-				log.warn("Rejected circular unit membership: unit {} would contain itself through {}", unitId, requested);
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Circular unit membership: the unit would contain itself");
-			}
-			unitMembershipService.replaceChildUnits(unitId, requested);
-		}
+    /**
+     * Fills the direct member user and unit ids of the unit.
+     */
+    public void populateWithMembers(UnitResponse unitResponse) {
+        unitResponse.setUserIds(userAccountRepository.findByUnits_Id(unitResponse.getId())
+            .stream()
+            .map(UserAccount::getId)
+            .sorted()
+            .toList());
+        unitResponse.setUnitIds(unitMembershipService.findChildUnitIds(unitResponse.getId())
+            .stream()
+            .sorted()
+            .toList());
+    }
 
-		if (userIds != null) {
-			var unit = unitRepository.findById(unitId)
-									 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No unit was found with given ID"));
-			var requested = new LinkedHashSet<>(userIds);
-			requested.remove(null);
-			var members = new ArrayList<UserAccount>();
-			for (var userId : requested) {
-				members.add(userAccountRepository.findById(userId)
-												 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown member user " + userId)));
-			}
+    /**
+     * Replaces the direct members of a unit. Null lists leave that kind of membership untouched. Every member must exist, a unit can not be its own member and
+     * no chain of units may lead back to the unit (the backstop for the frontend's own check).
+     *
+     * @throws ResponseStatusException 400 for an unknown member or a circular membership
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateMembers(long unitId, List<Long> userIds, List<Long> childUnitIds) {
+        if (childUnitIds != null) {
+            unitMembershipService.lockHierarchyMutations();
+            var requested = new LinkedHashSet<>(childUnitIds);
+            requested.remove(null);
+            if (requested.contains(unitId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A unit can not be a member of itself");
+            }
+            for (var childId : requested) {
+                if (unitRepository.findById(childId)
+                    .isEmpty()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown member unit " + childId);
+                }
+            }
+            if (unitMembershipService.wouldCreateCycle(unitId, requested)) {
+                log.warn("Rejected circular unit membership: unit {} would contain itself through {}", unitId, requested);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Circular unit membership: the unit would contain itself");
+            }
+            unitMembershipService.replaceChildUnits(unitId, requested);
+        }
 
-			// The user account owns the join table, so memberships are changed through the users
-			for (var current : userAccountRepository.findByUnits_Id(unitId)) {
-				if (!requested.contains(current.getId()) && current.getUnits() != null) {
-					current.getUnits()
-						   .removeIf(member -> member.getId()
-													 .equals(unitId));
-					userAccountRepository.save(current);
-				}
-			}
-			for (var member : members) {
-				if (member.getUnits() == null) {
-					member.setUnits(new java.util.HashSet<>());
-				}
-				if (member.getUnits()
-						  .stream()
-						  .noneMatch(existing -> existing.getId()
-														 .equals(unitId))) {
-					member.getUnits()
-						  .add(unit);
-					userAccountRepository.save(member);
-				}
-			}
-		}
-	}
+        if (userIds != null) {
+            var unit = unitRepository.findById(unitId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No unit was found with given ID"));
+            var requested = new LinkedHashSet<>(userIds);
+            requested.remove(null);
+            var members = new ArrayList<UserAccount>();
+            for (var userId : requested) {
+                members.add(userAccountRepository.findById(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown member user " + userId)));
+            }
 
-	@Transactional(propagation = Propagation.REQUIRED)
-	public void deleteById(long unitId) {
-		var optionalUnit = unitRepository.findById(unitId);
+            // The user account owns the join table, so memberships are changed through the users
+            for (var current : userAccountRepository.findByUnits_Id(unitId)) {
+                if (!requested.contains(current.getId())
+                    && current.getUnits() != null) {
+                    current.getUnits()
+                        .removeIf(member -> member.getId()
+                            .equals(unitId));
+                    userAccountRepository.save(current);
+                }
+            }
+            for (var member : members) {
+                if (member.getUnits() == null) {
+                    member.setUnits(new java.util.HashSet<>());
+                }
+                if (member.getUnits()
+                    .stream()
+                    .noneMatch(existing -> existing.getId()
+                        .equals(unitId))) {
+                    member.getUnits()
+                        .add(unit);
+                    userAccountRepository.save(member);
+                }
+            }
+        }
+    }
 
-		if (optionalUnit.isEmpty()) {
-			log.error("Could not find any unit by id {}", unitId);
-			return;
-		}
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void deleteById(long unitId) {
+        var optionalUnit = unitRepository.findById(unitId);
 
-		var unit = optionalUnit.get();
-		// Delete the unit ACL first
-		aclRepository.deleteAclsByAclId(unit.getAclId());
-		// We don't have a cascade delete for ACLs, so we need to delete all ACLs that refer to the unit manually
-		aclRepository.deleteAllByUnitId(unitId);
-		// Finally we can delete the unit itself
-		unitRepository.delete(unit);
-	}
+        if (optionalUnit.isEmpty()) {
+            log.error("Could not find any unit by id {}", unitId);
+            return;
+        }
 
-	public Unit save(Unit unit) {
-		return unitRepository.save(unit);
-	}
+        var unit = optionalUnit.get();
+        // Delete the unit ACL first
+        aclRepository.deleteAclsByAclId(unit.getAclId());
+        // We don't have a cascade delete for ACLs, so we need to delete all ACLs that refer to the unit manually
+        aclRepository.deleteAllByUnitId(unitId);
+        // Finally we can delete the unit itself
+        unitRepository.delete(unit);
+    }
 
-	private void populateWithAcl(long aclId, UnitResponse unitResponse) {
-		var acls         = aclRepository.getAclByAclId(aclId);
-		var aclResponses = new ArrayList<AclResponse>();
-		for (var acl : acls) {
-			aclResponses.add(acl.toResponse());
-		}
+    public Unit save(Unit unit) {
+        return unitRepository.save(unit);
+    }
 
-		unitResponse.setAcls(aclResponses);
-	}
+    private void populateWithAcl(long aclId, UnitResponse unitResponse) {
+        var acls = aclRepository.getAclByAclId(aclId);
+        var aclResponses = new ArrayList<AclResponse>();
+        for (var acl : acls) {
+            aclResponses.add(acl.toResponse());
+        }
 
-	@Transactional(propagation = Propagation.REQUIRED)
-	public UnitResponse createUnit(UnitRequest unitRequest) {
-		var aclId = aclRepository.getNextAclId();
+        unitResponse.setAcls(aclResponses);
+    }
 
-		try {
-			saveAclRequests(aclId, unitRequest.getAcls());
-		} catch (VempainAclException e) {
-			log.warn("Failed to save ACLs for new unit: {}", unitRequest.getName());
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ACL request list is corrupted");
-		}
+    @Transactional(propagation = Propagation.REQUIRED)
+    public UnitResponse createUnit(UnitRequest unitRequest) {
+        var aclId = aclRepository.getNextAclId();
 
-		var unit = Unit.builder()
-					   .name(unitRequest.getName())
-					   .description(unitRequest.getDescription())
-					   .aclId(aclId)
-					   .creator(AuthTools.getCurrentUserId())
-					   .created(Instant.now())
-					   .build();
+        try {
+            saveAclRequests(aclId, unitRequest.getAcls());
+        } catch (VempainAclException e) {
+            log.warn("Failed to save ACLs for new unit: {}", unitRequest.getName());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ACL request list is corrupted");
+        }
 
-		var newUnit = unitRepository.save(unit);
-		updateMembers(newUnit.getId(), unitRequest.getUserIds(), unitRequest.getUnitIds());
+        var unit = Unit.builder()
+            .name(unitRequest.getName())
+            .description(unitRequest.getDescription())
+            .aclId(aclId)
+            .creator(AuthTools.getCurrentUserId())
+            .created(Instant.now())
+            .build();
 
-		var unitResponse = newUnit.getUnitResponse();
-		populateWithAcl(aclId, unitResponse);
-		populateWithMembers(unitResponse);
-		return unitResponse;
-	}
+        var newUnit = unitRepository.save(unit);
+        updateMembers(newUnit.getId(), unitRequest.getUserIds(), unitRequest.getUnitIds());
 
-	@Transactional(propagation = Propagation.REQUIRED)
-	public void saveAclRequests(Long aclId, List<AclRequest> acls) throws VempainAclException {
-		if (aclId == null || aclId < 1) {
-			log.error("ACL ID is invalid: {}", aclId);
-			throw new VempainAclException("New ACL ID is invalid");
-		}
+        var unitResponse = newUnit.getUnitResponse();
+        populateWithAcl(aclId, unitResponse);
+        populateWithMembers(unitResponse);
+        return unitResponse;
+    }
 
-		if (acls == null || acls.isEmpty()) {
-			log.error("ACL array is empty");
-			throw new VempainAclException("No ACL to save");
-		}
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void saveAclRequests(Long aclId, List<AclRequest> acls) throws VempainAclException {
+        if (aclId == null
+            || aclId < 1) {
+            log.error("ACL ID is invalid: {}", aclId);
+            throw new VempainAclException("New ACL ID is invalid");
+        }
 
-		List<Acl> oldAcls = aclRepository.getAclByAclId(aclId);
+        if (acls == null
+            || acls.isEmpty()) {
+            log.error("ACL array is empty");
+            throw new VempainAclException("No ACL to save");
+        }
 
-		if (!oldAcls.isEmpty()) {
-			log.debug("ACL ID {} already exists, deleting old ACLs", aclId);
-			aclRepository.deleteAclsByAclId(aclId);
-		}
+        List<Acl> oldAcls = aclRepository.getAclByAclId(aclId);
 
-		for (AclRequest aclRequest : acls) {
-			var acl = Acl.builder()
-						 .aclId(aclId)
-						 .userId(aclRequest.getUser())
-						 .unitId(aclRequest.getUnit())
-						 .readPrivilege(aclRequest.isReadPrivilege())
-						 .createPrivilege(aclRequest.isCreatePrivilege())
-						 .modifyPrivilege(aclRequest.isModifyPrivilege())
-						 .deletePrivilege(aclRequest.isDeletePrivilege())
-						 .build();
-			aclRepository.save(acl);
-		}
-	}
+        if (!oldAcls.isEmpty()) {
+            log.debug("ACL ID {} already exists, deleting old ACLs", aclId);
+            aclRepository.deleteAclsByAclId(aclId);
+        }
 
-	@Transactional
-	public UnitResponse updateUnit(Long unitId, UnitRequest unitRequest) {
-		var optionalUnit = unitRepository.findById(unitId);
+        for (AclRequest aclRequest : acls) {
+            var acl = Acl.builder()
+                .aclId(aclId)
+                .userId(aclRequest.getUser())
+                .unitId(aclRequest.getUnit())
+                .readPrivilege(aclRequest.isReadPrivilege())
+                .createPrivilege(aclRequest.isCreatePrivilege())
+                .modifyPrivilege(aclRequest.isModifyPrivilege())
+                .deletePrivilege(aclRequest.isDeletePrivilege())
+                .build();
+            aclRepository.save(acl);
+        }
+    }
 
-		if (optionalUnit.isEmpty()) {
-			log.error("Could not find any unit by id {}", unitId);
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No unit was found with given ID");
-		}
+    @Transactional
+    public UnitResponse updateUnit(Long unitId, UnitRequest unitRequest) {
+        var optionalUnit = unitRepository.findById(unitId);
 
-		var unit  = optionalUnit.get();
-		var aclId = unit.getAclId();
+        if (optionalUnit.isEmpty()) {
+            log.error("Could not find any unit by id {}", unitId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No unit was found with given ID");
+        }
 
-		try {
-			saveAclRequests(aclId, unitRequest.getAcls());
-		} catch (VempainAclException e) {
-			log.warn("Failed to save ACLs for unit: {}", unitRequest.getName());
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ACL request list is corrupted");
-		}
+        var unit = optionalUnit.get();
+        var aclId = unit.getAclId();
 
-		unit.setName(unitRequest.getName());
-		unit.setDescription(unitRequest.getDescription());
-		unit.setModifier(AuthTools.getCurrentUserId());
-		unit.setModified(Instant.now());
+        try {
+            saveAclRequests(aclId, unitRequest.getAcls());
+        } catch (VempainAclException e) {
+            log.warn("Failed to save ACLs for unit: {}", unitRequest.getName());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ACL request list is corrupted");
+        }
 
-		var newUnit = unitRepository.save(unit);
-		updateMembers(newUnit.getId(), unitRequest.getUserIds(), unitRequest.getUnitIds());
+        unit.setName(unitRequest.getName());
+        unit.setDescription(unitRequest.getDescription());
+        unit.setModifier(AuthTools.getCurrentUserId());
+        unit.setModified(Instant.now());
 
-		var unitResponse = newUnit.getUnitResponse();
-		populateWithAcl(aclId, unitResponse);
-		populateWithMembers(unitResponse);
-		return unitResponse;
-	}
+        var newUnit = unitRepository.save(unit);
+        updateMembers(newUnit.getId(), unitRequest.getUserIds(), unitRequest.getUnitIds());
+
+        var unitResponse = newUnit.getUnitResponse();
+        populateWithAcl(aclId, unitResponse);
+        populateWithMembers(unitResponse);
+        return unitResponse;
+    }
 }

@@ -11,32 +11,32 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class TestServiceController {
 
-	@GetMapping("/test-service/protected")
-	public String protectedEndpoint() {
-		return "protected";
-	}
+    @GetMapping("/test-service/protected")
+    public String protectedEndpoint() {
+        return "protected";
+    }
 
-	@GetMapping("/test-service/resource/{aclId}")
-	@PreAuthorize("@aclAuthorizationService.canRead(#p0)")
-	public String readResource(@PathVariable("aclId") long aclId) {
-		return "read";
-	}
+    @GetMapping("/test-service/resource/{aclId}")
+    @PreAuthorize("@aclAuthorizationService.canRead(#p0)")
+    public String readResource(@PathVariable("aclId") long aclId) {
+        return "read";
+    }
 
-	@PostMapping("/test-service/resource/{aclId}")
-	@PreAuthorize("@aclAuthorizationService.canCreate(#p0)")
-	public String createResource(@PathVariable("aclId") long aclId) {
-		return "create";
-	}
+    @PostMapping("/test-service/resource/{aclId}")
+    @PreAuthorize("@aclAuthorizationService.canCreate(#p0)")
+    public String createResource(@PathVariable("aclId") long aclId) {
+        return "create";
+    }
 
-	@PutMapping("/test-service/resource/{aclId}")
-	@PreAuthorize("@aclAuthorizationService.canModify(#p0)")
-	public String modifyResource(@PathVariable("aclId") long aclId) {
-		return "modify";
-	}
+    @PutMapping("/test-service/resource/{aclId}")
+    @PreAuthorize("@aclAuthorizationService.canModify(#p0)")
+    public String modifyResource(@PathVariable("aclId") long aclId) {
+        return "modify";
+    }
 
-	@DeleteMapping("/test-service/resource/{aclId}")
-	@PreAuthorize("@aclAuthorizationService.canDelete(#p0)")
-	public String deleteResource(@PathVariable("aclId") long aclId) {
-		return "delete";
-	}
+    @DeleteMapping("/test-service/resource/{aclId}")
+    @PreAuthorize("@aclAuthorizationService.canDelete(#p0)")
+    public String deleteResource(@PathVariable("aclId") long aclId) {
+        return "delete";
+    }
 }

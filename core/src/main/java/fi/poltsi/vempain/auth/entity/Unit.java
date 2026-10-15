@@ -1,10 +1,12 @@
 package fi.poltsi.vempain.auth.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import fi.poltsi.vempain.auth.api.response.UnitResponse;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import fi.poltsi.vempain.auth.api.response.UnitResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,22 +23,23 @@ import lombok.experimental.SuperBuilder;
 @ToString(callSuper = true)
 @Table(name = "unit")
 public class Unit extends AbstractVempainEntity {
-	@Column(name = "name", nullable = false)
-	private String name;
-	@Column(name = "description")
-	private String description;
 
-	@JsonIgnore
-	public UnitResponse getUnitResponse() {
-		return UnitResponse.builder()
-						   .id(this.id)
-						   .name(this.name)
-						   .description(this.description)
-						   .acls(null)
-						   .creator(this.creator)
-						   .created(this.created)
-						   .modifier(this.modifier)
-						   .modified(this.modified)
-						   .build();
-	}
+    @Column(name = "name", nullable = false)
+    private String name;
+    @Column(name = "description")
+    private String description;
+
+    @JsonIgnore
+    public UnitResponse getUnitResponse() {
+        return UnitResponse.builder()
+            .id(this.id)
+            .name(this.name)
+            .description(this.description)
+            .acls(null)
+            .creator(this.creator)
+            .created(this.created)
+            .modifier(this.modifier)
+            .modified(this.modified)
+            .build();
+    }
 }
