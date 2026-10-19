@@ -61,9 +61,9 @@
 
 - Full test run in CI is `./gradlew clean test` (`.github/workflows/ci.yaml`).
 - Useful local commands:
-    - `./gradlew :api:test`
-    - `./gradlew :core:test`
-    - `./gradlew clean test`
+  - `./gradlew :api:test`
+  - `./gradlew :core:test`
+  - `./gradlew clean test`
 - Integration tests use PostgreSQL Testcontainers (`postgres:18-alpine`) and Flyway, not H2. See `IntegrationTestSetup.java`, `AclServiceConcurrencyITC.java`,
   and `LoginCTC.java`.
 - `IntegrationTestSetup` keeps the seeded admin user (`Constants.ADMIN_ID == 1L`) and resets other rows before each test; do not write tests that blindly delete
@@ -75,7 +75,7 @@
 
 ## Conventions specific to this repo
 
-- Formatting is tab-indented for Java (`.editorconfig`); avoid reformatting unrelated code.
+- Java is indented with 4 spaces, 160-character lines (`.editorconfig`, layout owned by `.config/eclipse-formatter.xml`); avoid reformatting unrelated code.
 - Prefer Lombok annotations for applicable Java boilerplate such as constructors, accessors, builders, and logging, unless they obscure behavior or conflict
   with framework requirements.
 - DTOs commonly use Lombok builders and snake_case JSON mappings; see `UserResponse`, `UnitResponse`, and `ResponseDeserializationUTC.java` for the

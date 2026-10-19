@@ -10,4 +10,5 @@ description: Build and test the vempain-auth library modules (api, core, test-se
 - Suffixes: `UTC` unit, `ITC` integration/container, `CTC` controller (MockMvc), `JTC` JSON/DTO contract; helpers (`TestApp`,
   `IntegrationTestSetup`, `Test*Config`, `Test*Tools`) carry no suffix.
 - Keep `AclAuthorizationService` at 100% line coverage (JaCoCo report under `core/build/reports/jacoco`).
-- Formatting: tabs, 160 columns (`.editorconfig`); do not reformat unrelated code. Report tests run and failures from the output.
+- Formatting: 4 spaces, 160 columns (`.editorconfig`, `.config/eclipse-formatter.xml`); do not reformat unrelated code. Report tests run and
+  failures from the output.
