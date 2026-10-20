@@ -17,6 +17,11 @@ repositories {
 	mavenCentral()
 }
 
+// Report deprecated API use and unchecked operations with their location instead of javac's "recompile with -Xlint" note
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
+}
+
 dependencies {
 	implementation project(':core')
 	implementation libs.spring.boot.starter.data.jpa
