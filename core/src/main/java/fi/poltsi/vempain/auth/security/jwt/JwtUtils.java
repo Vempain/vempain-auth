@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -44,12 +45,13 @@ public class JwtUtils {
     public JwtToken generateJwtTokenForUser(String username, String login, String email) {
         var nowDate = Instant.now();
         var expDate = nowDate.plus(jwtExpirationMs, ChronoUnit.MILLIS);
-        var jwtId = jwtSecret + username + login + email;
+        // The token id is random: a JWT payload is only base64 encoded, so nothing derived from the signing secret may ever be put in it
         var jwtTokenString = Jwts.builder()
             .claim("name", username)
             .claim("email", email)
             .subject(login)
-            .id(jwtId)
+            .id(UUID.randomUUID()
+                .toString())
             .issuedAt(Date.from(nowDate))
             .expiration(Date.from(expDate))
             .signWith(getSecretKey())
@@ -59,6 +61,17 @@ public class JwtUtils {
             .issuedAt(nowDate)
             .expiresAt(expDate)
             .build();
+    }
+
+    /**
+     * Issues a fresh token for the user of a valid token, with the same name, login and email and the full lifetime counted from now: the sliding session of
+     * the authenticated requests.
+     *
+     * @throws io.jsonwebtoken.JwtException when the token is not valid
+     */
+    public JwtToken renewJwtToken(String authToken) {
+        var claims = extractAllClaims(authToken);
+        return generateJwtTokenForUser(claims.get("name", String.class), claims.getSubject(), claims.get("email", String.class));
     }
 
     private Claims extractAllClaims(String token) {

@@ -17,11 +17,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import fi.poltsi.vempain.auth.api.Constants;
 import fi.poltsi.vempain.auth.service.UserDetailsImpl;
 import fi.poltsi.vempain.auth.service.UserDetailsServiceImpl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -78,6 +84,69 @@ class AuthTokenFilterUTC {
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext()
             .getAuthentication());
+    }
+
+    @Test
+    void anAuthenticatedRequestRenewsTheSessionInTheResponseHeaders() throws Exception {
+        var token = realJwtUtils.generateJwtTokenForUser("username", "loginName", "email@test.com");
+        var renewed = realJwtUtils.generateJwtTokenForUser("username", "loginName", "email@test.com");
+        var userDetails = new UserDetailsImpl(1L, "loginName", "nick", "email@test.com", "password", Set.of(), List.of());
+        var request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer " + token.getTokenString());
+        var response = new MockHttpServletResponse();
+        when(jwtUtils.validateJwtToken(token.getTokenString())).thenReturn(true);
+        when(jwtUtils.getUserNameFromJwtToken(token.getTokenString())).thenReturn("loginName");
+        when(userDetailsService.loadUserByUsername("loginName")).thenReturn(userDetails);
+        when(jwtUtils.renewJwtToken(token.getTokenString())).thenReturn(renewed);
+
+        authTokenFilter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        assertNotNull(SecurityContextHolder.getContext()
+            .getAuthentication());
+        assertEquals(renewed.getTokenString(), response.getHeader(Constants.RENEWED_TOKEN_HEADER));
+        assertEquals(renewed.getExpiresAt()
+            .toString(), response.getHeader(Constants.RENEWED_TOKEN_EXPIRES_AT_HEADER));
+    }
+
+    @Test
+    void aBackgroundRequestIsAuthenticatedButDoesNotRenewTheSession() throws Exception {
+        var userDetails = new UserDetailsImpl(1L, "loginName", "nick", "email@test.com", "password", Set.of(), List.of());
+        var request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer polling.token");
+        request.addHeader(Constants.BACKGROUND_REQUEST_HEADER, "true");
+        var response = new MockHttpServletResponse();
+        when(jwtUtils.validateJwtToken("polling.token")).thenReturn(true);
+        when(jwtUtils.getUserNameFromJwtToken("polling.token")).thenReturn("loginName");
+        when(userDetailsService.loadUserByUsername("loginName")).thenReturn(userDetails);
+
+        authTokenFilter.doFilterInternal(request, response, filterChain);
+
+        assertNotNull(SecurityContextHolder.getContext()
+            .getAuthentication());
+        assertNull(response.getHeader(Constants.RENEWED_TOKEN_HEADER));
+        verify(jwtUtils, never()).renewJwtToken(anyString());
+        assertTrue(AuthTokenFilter.isBackgroundRequest(request));
+        assertFalse(AuthTokenFilter.isBackgroundRequest(new MockHttpServletRequest()));
+    }
+
+    @Test
+    void aFailedRenewalKeepsTheRequestAuthenticated() throws Exception {
+        var userDetails = new UserDetailsImpl(1L, "loginName", "nick", "email@test.com", "password", Set.of(), List.of());
+        var request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer valid.token");
+        var response = new MockHttpServletResponse();
+        when(jwtUtils.validateJwtToken("valid.token")).thenReturn(true);
+        when(jwtUtils.getUserNameFromJwtToken("valid.token")).thenReturn("loginName");
+        when(userDetailsService.loadUserByUsername("loginName")).thenReturn(userDetails);
+        when(jwtUtils.renewJwtToken("valid.token")).thenThrow(new IllegalStateException("The JWT signing secret is not configured"));
+
+        authTokenFilter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        assertNotNull(SecurityContextHolder.getContext()
+            .getAuthentication());
+        assertNull(response.getHeader(Constants.RENEWED_TOKEN_HEADER));
     }
 
     @Test
