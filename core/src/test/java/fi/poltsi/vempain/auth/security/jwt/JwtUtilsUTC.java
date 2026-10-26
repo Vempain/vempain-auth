@@ -16,6 +16,7 @@ import fi.poltsi.vempain.auth.service.UserDetailsImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,6 +45,45 @@ class JwtUtilsUTC {
         assertNotNull(token.getExpiresAt());
         assertTrue(token.getExpiresAt()
             .isAfter(token.getIssuedAt()));
+    }
+
+    @Test
+    void tokenIdIsRandomAndThePayloadNeverContainsTheSecret() {
+        var first = payloadOf(jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com")
+            .getTokenString());
+        var second = payloadOf(jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com")
+            .getTokenString());
+
+        assertFalse(first.contains("test-secret"), "the signing secret must not be readable from the token: " + first);
+        var jti = first.replaceAll(".*\"jti\":\"([^\"]+)\".*", "$1");
+        assertTrue(jti.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"), "random token id: " + jti);
+        assertFalse(second.contains("\"jti\":\"" + jti + "\""), "every token gets an id of its own");
+    }
+
+    @Test
+    void renewJwtTokenIssuesAFreshTokenForTheSameUserWithTheFullLifetime() throws Exception {
+        ReflectionTestUtils.setField(jwtUtils, "jwtExpirationMs", 60_000L);
+        var original = jwtUtils.generateJwtTokenForUser("username", "login", "email@test.com");
+        Thread.sleep(5);
+
+        var renewed = jwtUtils.renewJwtToken(original.getTokenString());
+
+        assertNotEquals(original.getTokenString(), renewed.getTokenString());
+        assertTrue(renewed.getExpiresAt()
+            .isAfter(original.getExpiresAt()), "the lifetime starts again at the renewal");
+        assertTrue(jwtUtils.validateJwtToken(renewed.getTokenString()));
+        assertEquals("login", jwtUtils.getUserNameFromJwtToken(renewed.getTokenString()));
+        var payload = payloadOf(renewed.getTokenString());
+        assertTrue(payload.contains("\"name\":\"username\""), payload);
+        assertTrue(payload.contains("\"email\":\"email@test.com\""), payload);
+
+        // A token that does not validate cannot be renewed
+        org.junit.jupiter.api.Assertions.assertThrows(io.jsonwebtoken.JwtException.class, () -> jwtUtils.renewJwtToken("not.a.token"));
+    }
+
+    private static String payloadOf(String token) {
+        return new String(java.util.Base64.getUrlDecoder()
+            .decode(token.split("\\.")[1]), java.nio.charset.StandardCharsets.UTF_8);
     }
 
     @Test

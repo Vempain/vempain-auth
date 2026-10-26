@@ -25,6 +25,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import fi.poltsi.vempain.auth.api.Constants;
 import fi.poltsi.vempain.auth.security.jwt.AuthEntryPointJwt;
 import fi.poltsi.vempain.auth.security.jwt.AuthTokenFilter;
 import fi.poltsi.vempain.auth.service.UserDetailsServiceImpl;
@@ -138,6 +139,8 @@ public abstract class WebSecurityConfig {
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(Collections.singletonList("*"));
         configuration.setAllowedHeaders(Collections.singletonList("*"));
+        // Browsers only let a page read the renewed session token when the headers are exposed
+        configuration.setExposedHeaders(List.of(Constants.RENEWED_TOKEN_HEADER, Constants.RENEWED_TOKEN_EXPIRES_AT_HEADER));
         configuration.setMaxAge(maxAge);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration(corsPattern, configuration);

@@ -87,6 +87,13 @@
 - REST endpoints are defined via constants in `api/.../Constants.java`; e.g. login uses `Constants.LOGIN_PATH` (`/login`).
 - Security config expects host applications/tests to provide properties such as `vempain.cors.allowed-origins`, `vempain.cors.max-age`,
   `vempain.cors.cors-pattern`, `vempain.app.jwt-secret`, and `vempain.app.jwt-expiration-ms`.
+- Sessions slide: `AuthTokenFilter` answers every authenticated request the user triggered with a fresh token in the
+  `X-Vempain-Token` / `X-Vempain-Token-Expires-At` response headers (`Constants.RENEWED_TOKEN_*`, `JwtUtils.renewJwtToken`), so the
+  session lives `vempain.app.jwt-expiration-ms` from the user's last action; the CORS configuration exposes the two headers. A request
+  carrying `X-Vempain-Background: true` (`Constants.BACKGROUND_REQUEST_HEADER`: task polling and other automatic refreshes of the SPAs
+  and the CLI) is served but never renews. Clients (`vempain-auth-frontend` `AuthInterceptor`, `vempain-cli` `HttpTransport`) replace
+  their stored token with the renewed one. The token id (`jti`) is a random UUID; nothing derived from `vempain.app.jwt-secret` may
+  ever be placed in a token payload, which is only base64 encoded.
 
 ## Publishing / versions
 
