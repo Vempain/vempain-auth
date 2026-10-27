@@ -64,6 +64,9 @@
   - `./gradlew :api:test`
   - `./gradlew :core:test`
   - `./gradlew clean test`
+- javac runs with `-Xlint:deprecation -Xlint:unchecked -Werror` in every module (`tasks.withType(JavaCompile)` in the `build.gradle` files), so a deprecated
+  3rd-party API or an unchecked operation fails the compile: replace the call with the documented successor; a deliberate exception needs `@SuppressWarnings`
+  with a comment explaining why.
 - Integration tests use PostgreSQL Testcontainers (`postgres:18-alpine`) and Flyway, not H2. See `IntegrationTestSetup.java`, `AclServiceConcurrencyITC.java`,
   and `LoginCTC.java`.
 - `IntegrationTestSetup` keeps the seeded admin user (`Constants.ADMIN_ID == 1L`) and resets other rows before each test; do not write tests that blindly delete
