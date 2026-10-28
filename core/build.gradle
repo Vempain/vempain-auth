@@ -2,7 +2,6 @@ plugins {
 	id 'java-library'
 	id 'maven-publish'
 	alias libs.plugins.freefair.lombok
-	alias libs.plugins.spring.dependency.management
 	id 'jacoco'
 }
 
