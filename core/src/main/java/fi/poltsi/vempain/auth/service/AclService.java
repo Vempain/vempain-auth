@@ -2,6 +2,8 @@ package fi.poltsi.vempain.auth.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
 import org.springframework.http.HttpStatus;
@@ -10,7 +12,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import fi.poltsi.vempain.auth.api.AclBulkUpdateModeEnum;
+import fi.poltsi.vempain.auth.api.request.AclBulkEntryRequest;
 import fi.poltsi.vempain.auth.api.request.AclRequest;
+import fi.poltsi.vempain.auth.api.response.AclBulkUpdateResponse;
 import fi.poltsi.vempain.auth.api.response.AclResponse;
 import fi.poltsi.vempain.auth.entity.AbstractVempainEntity;
 import fi.poltsi.vempain.auth.entity.Acl;
@@ -133,6 +138,81 @@ public class AclService {
                 .build();
             save(acl);
         }
+    }
+
+    /**
+     * Grants the entries on several ACLs at once, for the lists that set the permissions of their selected resources. In {@code ADD} mode an entry for a user
+     * or unit that already has a row on the ACL replaces that row's privileges and the other rows stay; in {@code REPLACE} mode every row of the ACL is removed
+     * first. An ACL without rows (unknown) or one the caller may not modify (as {@code canModify} decides) is left alone and reported as skipped. The entries
+     * are verified like every ACL row ({@link #verifyAcl}: an unknown user or unit is a {@link VempainAclException}).
+     *
+     * @param canModify answers whether the caller holds the modify privilege on an ACL, normally {@code AclAuthorizationService::canModify}
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public AclBulkUpdateResponse bulkUpdate(List<Long> aclIds, AclBulkUpdateModeEnum mode, List<AclBulkEntryRequest> entries, Predicate<Long> canModify)
+            throws VempainAclException {
+        if (aclIds == null
+            || aclIds.isEmpty()
+            || entries == null
+            || entries.isEmpty()
+            || mode == null) {
+            throw new VempainAclException("A bulk ACL update needs ACL ids, a mode and entries");
+        }
+
+        var updated = new ArrayList<Long>();
+        var skipped = new ArrayList<Long>();
+
+        for (var aclId : aclIds.stream()
+            .distinct()
+            .toList()) {
+            var rows = findAclByAclId(aclId);
+            if (rows.isEmpty()
+                || !canModify.test(aclId)) {
+                log.info("Bulk ACL update skips ACL {}: {}", aclId, rows.isEmpty() ? "unknown" : "no modify privilege");
+                skipped.add(aclId);
+                continue;
+            }
+
+            if (mode == AclBulkUpdateModeEnum.REPLACE) {
+                for (var row : rows) {
+                    aclRepository.deleteById(row.getId());
+                }
+                rows = List.of();
+            }
+
+            var remaining = new ArrayList<>(rows);
+            for (var entry : entries) {
+                var existing = remaining.stream()
+                    .filter(row -> entry.getUser() != null ? Objects.equals(row.getUserId(), entry.getUser())
+                            : Objects.equals(row.getUnitId(), entry.getUnit()))
+                    .findFirst();
+                if (existing.isPresent()) {
+                    var row = existing.get();
+                    row.setCreatePrivilege(entry.isCreatePrivilege());
+                    row.setReadPrivilege(entry.isReadPrivilege());
+                    row.setModifyPrivilege(entry.isModifyPrivilege());
+                    row.setDeletePrivilege(entry.isDeletePrivilege());
+                    update(row);
+                } else {
+                    remaining.add(save(Acl.builder()
+                        .aclId(aclId)
+                        .userId(entry.getUser())
+                        .unitId(entry.getUnit())
+                        .createPrivilege(entry.isCreatePrivilege())
+                        .readPrivilege(entry.isReadPrivilege())
+                        .modifyPrivilege(entry.isModifyPrivilege())
+                        .deletePrivilege(entry.isDeletePrivilege())
+                        .build()));
+                }
+            }
+            updated.add(aclId);
+        }
+
+        log.info("Bulk ACL update ({}) changed {} ACLs and skipped {}", mode, updated.size(), skipped.size());
+        return AclBulkUpdateResponse.builder()
+            .updatedAclIds(updated)
+            .skippedAclIds(skipped)
+            .build();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
