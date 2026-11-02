@@ -13,6 +13,12 @@
 
 - `api/src/main/java/fi/poltsi/vempain/auth/api/**`: enums, DTOs, base response types.
 - `api/src/main/java/fi/poltsi/vempain/auth/rest/{LoginAPI,UserAPI,UnitAPI,AclAPI}.java`: HTTP contracts live in `api`; `core` implements them.
+  `AclAPI.bulkUpdate` (`POST /content-management/acls/bulk`, `AclBulkUpdateRequest`: `acl_ids`, `mode` `ADD`|`REPLACE`, `entries`) is the
+  "Permissions of selected" action of the SPAs' lists: `AclService.bulkUpdate` applies the same entries to every ACL (`ADD` merges by
+  grantee, `REPLACE` deletes the rows first), skips the ACLs without rows or without the caller's modify privilege
+  (`AclAuthorizationService::canModify`, no administrator guard) and answers `AclBulkUpdateResponse` (`updated_acl_ids`,
+  `skipped_acl_ids`); an entry naming an unknown user or unit is a `VempainAclException` = 400. Tested in `AclBulkUpdateCTC`,
+  `AclControllerUTC` and `AclBulkContractJTC`.
 - `core/src/main/java/fi/poltsi/vempain/auth/controller/{Login,User,Unit,Acl}Controller.java`: the concrete controllers. Every service that
   includes `vempain-auth-core` hosts them through component scanning, so user, unit and ACL management (`/content-management/users|units|acls`) is implemented
   once here and never in a consuming backend. `AdministrationGuard`
